@@ -1,10 +1,11 @@
 title: "Sameen Ahmed Ashraf — Data & Analytics"
 description: "Data analyst and engineer with expertise in data pipelines, analytics, and machine learning."
 baseurl: ""
-url: ""
+url: "https://sameenashraf.github.io"
 markdown: kramdown
-theme: null
-plugins: []
+theme: minima
+plugins:
+  - jekyll-feed
 defaults:
   - scope: { path: "" }
     values:
