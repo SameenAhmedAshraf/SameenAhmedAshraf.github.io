@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {% include head.html %}
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <!-- <a class="brand" href="#about">SA</a> -->
+        <nav class="nav">
+          <a href="#about">About</a>
+          <a href="#projects">Projects</a>
+          <a href="#certificates">Certificates</a>
+          <a href="https://www.linkedin.com/in/sameen-ahmed-ashraf/" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+          <a href="https://public.tableau.com/app/profile/sameen.ahmed.ashraf" target="_blank" rel="noopener" aria-label="Tableau"><img src="/assets/images/tableau.png" alt="Tableau" class="nav-tableau-icon"></a>
+        </nav>
+      </div>
+    </header>
+    <main class="content">
+      {{ content }}
+    </main>
+    <footer class="site-footer">
+      <p>© {{ site.time | date: '%Y' }} {{ site.author }}</p>
+    </footer>
+    <script>
+      // Smooth scroll
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+          const href = a.getAttribute('href');
+          if (href.length > 1) {
+            e.preventDefault();
+            document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      });
+      // Preview swap on hover if data-preview exists
+      document.addEventListener('mouseover', function(e){
+        const img = e.target.closest('img[data-preview]');
+        if(!img) return;
+        img.dataset.still = img.dataset.still || img.src;
+        img.src = img.getAttribute('data-preview');
+      });
+      document.addEventListener('mouseout', function(e){
+        const img = e.target.closest('img[data-preview]');
+        if(!img || !img.dataset.still) return;
+        img.src = img.dataset.still;
+      });
+      // Simple lightbox
+      const lb = document.createElement('div');
+      lb.className = 'lightbox hidden';
+      lb.innerHTML = '<div class="lb-backdrop"></div><img class="lb-img" alt=""><button class="lb-close" aria-label="Close">×</button>';
+      document.body.appendChild(lb);
+      const lbImg = lb.querySelector('.lb-img');
+      const close = () => lb.classList.add('hidden');
+      lb.querySelector('.lb-backdrop').addEventListener('click', close);
+      lb.querySelector('.lb-close').addEventListener('click', close);
+      document.addEventListener('click', function(e){
+        const a = e.target.closest('[data-lightbox-src]');
+        if(!a) return;
+        e.preventDefault();
+        lbImg.src = a.getAttribute('data-lightbox-src');
+        lb.classList.remove('hidden');
+      });
+    </script>
+  </body>
+</html>

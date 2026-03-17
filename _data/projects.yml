@@ -1,0 +1,24 @@
+# Add your GitHub projects here
+# Example template - update with your actual projects
+
+- title: "StockX Product Analysis"
+  link: "https://public.tableau.com/app/profile/sameen.ahmed.ashraf/viz/StockXProductAnalysis/StoryBoard"
+  description: "Comprehensive analysis of StockX product data with interactive visualizations and market insights."
+  stack: "Tableau · Data Analytics · Visualization"
+  image: "/assets/images/StoryBoard.png"
+  screenshot: "/assets/images/StoryBoard.png"
+
+- title: "Yield Analysis Dashboard"
+  link: "https://github.com/SameenAhmedAshraf/yield_analysis"
+  description: "Interactive analytics dashboard for yield analysis with real-time data processing and visualizations."
+  stack: "Python · Pandas · SQL · ETL · Streamlit · Docker"
+  image: "/assets/images/yeild.png"
+  screenshot: "/assets/images/yeild.png"
+
+- title: "Poke Visualization"
+  link: "https://github.com/SameenAhmedAshraf/PokeVisualization"
+  description: "Comprehensive Pokémon data analysis with interactive dashboard and detailed visualizations. Features type distribution analysis, stat correlations, generation trends, and legendary Pokémon comparisons."
+  stack: "Python · Streamlit · Pandas · Matplotlib · Seaborn"
+  image: "/assets/images/pokeviz.png"
+  screenshot: "/assets/images/pokeviz.png"
+

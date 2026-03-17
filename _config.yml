@@ -1,0 +1,16 @@
+title: "Sameen Ahmed Ashraf — Data & Analytics"
+description: "Data analyst and engineer with expertise in data pipelines, analytics, and machine learning."
+baseurl: ""
+url: ""
+markdown: kramdown
+theme: null
+plugins: []
+defaults:
+  - scope: { path: "" }
+    values:
+      layout: default
+author: "Sameen Ahmed Ashraf"
+github_username: "SameenAhmedAshraf"
+linkedin_url: "https://www.linkedin.com/in/sameen-ahmed-ashraf/"
+exclude:
+  - "README.md"

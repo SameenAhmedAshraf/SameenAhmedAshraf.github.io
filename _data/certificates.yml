@@ -1,0 +1,29 @@
+# Add your certificates here from LinkedIn
+
+- title: "AWS Certified SysOps Administrator – Associate"
+  issuer: "Amazon Web Services (AWS)"
+  date: "September 2023"
+  link: "https://i.imgur.com/SklXeEz.png"
+  image: "/assets/images/aws.png"
+  screenshot: "/assets/images/aws.png"
+
+- title: "SQL (Advanced) Certificate"
+  issuer: "HackerRank"
+  date: "February 2022"
+  link: "https://www.hackerrank.com/certificates/622a90770943"
+  image: "/assets/images/sqladv.png"
+  screenshot: "/assets/images/sqladv.jpg"
+
+- title: "SQL (Intermediate) Certificate"
+  issuer: "HackerRank"
+  date: "February 2022"
+  link: "https://www.hackerrank.com/certificates/9995daea1a53"
+  image: "/assets/images/sqlint.png"
+  screenshot: "/assets/images/sqlint.jpg"
+
+- title: "Programming Foundations: Fundamentals"
+  issuer: "LinkedIn"
+  date: "March 2020"
+  link: "https://www.linkedin.com/learning/certificates/26db7b394597ea1413e47010a199127e4ecee0fb981a0f67cbabaf735629a917?trk=backfilled_certificate"
+  image: "/assets/images/programmingfoundations.png"
+  screenshot: "/assets/images/programmingfoundations.png"
