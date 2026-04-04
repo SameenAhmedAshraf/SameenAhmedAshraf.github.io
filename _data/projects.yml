@@ -4,8 +4,8 @@
   link: "https://github.com/SameenAhmedAshraf/yield_analysis"
   description: "Interactive analytics dashboard for yield analysis with real-time data processing and visualizations."
   stack: "Python · Pandas · SQL · ETL · Streamlit · Docker"
-  image: "/assets/images/yeildmain.png"
-  screenshot: "/assets/images/yeildmain.png"
+  image: "/assets/images/yieldmain.png"
+  screenshot: "/assets/images/yieldmain.png"
 
 - title: "StockX Product Analysis"
   link: "https://public.tableau.com/app/profile/sameen.ahmed.ashraf/viz/StockXProductAnalysis/StoryBoard"
