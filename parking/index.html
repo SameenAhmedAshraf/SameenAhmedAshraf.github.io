@@ -114,43 +114,19 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function selC(){return complexes.find(c=>c.id===S.sel.cid)}
 function selCar(){return cars.find(c=>c.id===S.sel.carid)}
 
-// ── Fill script ────────────────────────────────────────────────────────────────
-function buildScript(cx,car){
-  const d={
-    apt:cx.apt||'',phone:'',email:'',
-    make:car.make||'',model:car.model||'',year:car.year||'',
-    color:car.color||'',plate:car.plate||'',state:car.state||'',
-    label:car.label||'',code:cx.code||''
-  };
-  const js=`(function(){
-var d=${JSON.stringify(d)};
-function nv(el,v){if(!el)return;try{var s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');if(s&&s.set)s.set.call(el,v);}catch(e){}el.value=v;['input','change','blur'].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});}
-function ns(el,v){if(!el)return;var o=Array.from(el.options).find(function(o){return o.value.toLowerCase()===v.toLowerCase()||o.text.toLowerCase()===v.toLowerCase()||o.text.toLowerCase().startsWith(v.toLowerCase());});if(o)el.value=o.value;['change','blur'].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});}
-function q(ss,v,sel){for(var i=0;i<ss.length;i++){var el=document.querySelector(ss[i]);if(el){sel?ns(el,v):nv(el,v);return;}}}
-q(['input[name="unit"]','input[name="unit_number"]','input[name="apartment"]','input[name="apt"]','input[id*="unit" i]','input[placeholder*="unit" i]','input[placeholder*="apt" i]'],d.apt);
-q(['input[name="make"]','input[id*="make" i]','input[placeholder*="make" i]'],d.make);
-q(['input[name="model"]','input[id*="model" i]','input[placeholder*="model" i]'],d.model);
-q(['input[name="year"]','input[id*="year" i]','input[placeholder*="year" i]'],d.year);
-q(['input[name="color"]','input[id*="color" i]','input[placeholder*="color" i]'],d.color);
-q(['input[name="plate"]','input[name="license_plate"]','input[name="license"]','input[id*="plate" i]','input[placeholder*="plate" i]','input[placeholder*="license" i]'],d.plate);
-q(['select[name*="state" i]','select[id*="state" i]'],d.state,true);
-q(['input[name*="state" i]','input[id*="state" i]'],d.state);
-if(d.code)q(['input[name*="code" i]','input[name*="property" i]','input[id*="code" i]'],d.code);
-document.querySelectorAll('label').forEach(function(lbl){
-  var t=lbl.textContent.toLowerCase().trim();
-  var el=lbl.control||document.getElementById(lbl.htmlFor)||lbl.nextElementSibling;
-  if(!el)return;
-  if(/unit|apt|apartment/.test(t))nv(el,d.apt);
-  else if(/make/.test(t))nv(el,d.make);
-  else if(/model/.test(t))nv(el,d.model);
-  else if(/year/.test(t))nv(el,d.year);
-  else if(/color/.test(t))nv(el,d.color);
-  else if(/plate|license/.test(t))nv(el,d.plate);
-  else if(/state/.test(t)&&el.tagName==='SELECT')ns(el,d.state);
-});
-alert('Form filled! Review and submit.');
-})();`;
-  return 'javascript:'+encodeURIComponent(js);
+// ── Build clipboard JSON for Scriptable ────────────────────────────────────────
+function buildClipboardData(cx, car){
+  return JSON.stringify({
+    url:   cx.url  || 'https://www.register2park.com/',
+    apt:   cx.apt  || '',
+    code:  cx.code || '',
+    make:  car.make  || '',
+    model: car.model || '',
+    year:  car.year  || '',
+    color: car.color || '',
+    plate: car.plate || '',
+    state: car.state || '',
+  });
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -270,43 +246,70 @@ function viewComplexes(){
 // ── Auto-fill modal ────────────────────────────────────────────────────────────
 function modalAutoFill(){
   const cx=selC(), car=selCar();
-  const url=cx.url||'https://www.register2park.com/';
-  const script=buildScript(cx,car);
+  const setup=!localStorage.getItem('scriptable_setup');
   return `
   <div class="overlay">
     <div class="sheet">
       <div class="handle"></div>
       <div class="mnav">
         <button class="nav-btn" onclick="closeModal()">Done</button>
-        <span class="ttl">Auto-Fill</span>
+        <span class="ttl">${setup?'One-Time Setup':'Auto-Fill'}</span>
         <span style="min-width:60px"></span>
       </div>
-      <div class="info ok" style="margin-top:0;font-size:15px;font-weight:500">✅ Fill script copied to clipboard!</div>
+
+      ${setup ? `
+      <div class="info ok" style="margin-top:0">✅ Data copied to clipboard! First, do this one-time setup:</div>
       <div class="card" style="margin-bottom:0">
         <div class="af-step">
           <div class="af-num">1</div>
           <div class="af-body">
-            <a href="${esc(url)}" target="_blank">Open register2park.com →</a><br>
-            <span style="font-size:13px;color:var(--secondary)">Tap to open the form in a new tab</span>
+            <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank">Install Scriptable (free) →</a><br>
+            <span style="font-size:13px;color:var(--secondary)">A free automation app — tap to open App Store</span>
           </div>
         </div>
         <div class="af-step">
           <div class="af-num">2</div>
-          <div class="af-body">Tap the <strong>address bar</strong> in Safari</div>
+          <div class="af-body">Open Scriptable → tap <strong>+</strong> (top right)<br>
+            Tap the title "Untitled Script" → rename it exactly: <strong>ParkFill</strong>
+          </div>
         </div>
         <div class="af-step">
           <div class="af-num">3</div>
-          <div class="af-body"><strong>Select All</strong> the text, then tap <strong>Paste</strong></div>
+          <div class="af-body">Delete the placeholder text. Then
+            <a href="/parking/parkfill.js" target="_blank">tap here to open the script →</a><br>
+            <span style="font-size:13px;color:var(--secondary)">Select All → Copy → switch back to Scriptable → Paste → tap Done ✓</span>
+          </div>
         </div>
         <div class="af-step">
           <div class="af-num">4</div>
-          <div class="af-body">Tap <strong>Go</strong> — all fields fill automatically ✨</div>
+          <div class="af-body">
+            <a href="scriptable:///run?scriptName=ParkFill" onclick="markSetupDone()">Tap here to run ParkFill now →</a><br>
+            <span style="font-size:13px;color:var(--secondary)">Scriptable opens, loads register2park.com, and fills the form automatically</span>
+          </div>
         </div>
       </div>
-      <div class="info" style="margin-top:12px">
-        <strong>Filling:</strong> Apt ${esc(cx.apt)} · ${esc(car.year)} ${esc(car.make)} ${esc(car.model)} · Plate ${esc(car.plate)} (${esc(car.state)})
+      <button class="btn ghost" style="margin-top:12px" onclick="markSetupDone();closeModal()">I already set it up — skip</button>
+      ` : `
+      <div class="info ok" style="margin-top:0;font-weight:500">✅ Data copied! Tap below to fill the form:</div>
+      <div class="card" style="margin-bottom:0">
+        <div class="af-step">
+          <div class="af-num">1</div>
+          <div class="af-body">
+            <a href="scriptable:///run?scriptName=ParkFill" style="font-size:17px;font-weight:600">Open Scriptable & Fill Form →</a><br>
+            <span style="font-size:13px;color:var(--secondary)">Scriptable opens register2park.com and fills all fields</span>
+          </div>
+        </div>
+        <div class="af-step">
+          <div class="af-num">2</div>
+          <div class="af-body">Review the filled form and tap <strong>Submit</strong></div>
+        </div>
       </div>
-      <button class="btn" id="rbtn" onclick="reCopy()">📋 Copy Script Again</button>
+      `}
+
+      <div class="info" style="margin-top:12px">
+        <strong>Registering:</strong> Apt ${esc(cx.apt)} · ${esc(car.year)} ${esc(car.make)} ${esc(car.model)} · ${esc(car.plate)} (${esc(car.state)})
+      </div>
+      <button class="btn" id="rbtn" onclick="reCopy()">📋 Copy Data Again</button>
       <div style="height:8px"></div>
     </div>
   </div>`;
@@ -393,16 +396,19 @@ function closeModal(){S.modal=null;render()}
 
 function doRegister(){
   const cx=selC(), car=selCar(); if(!cx||!car)return;
-  const script=buildScript(cx,car);
-  copyText(script).finally(()=>{S.modal='autofill';render()});
+  copyText(buildClipboardData(cx,car)).finally(()=>{S.modal='autofill';render()});
 }
 
 function reCopy(){
   const cx=selC(), car=selCar(); if(!cx||!car)return;
-  copyText(buildScript(cx,car)).then(()=>{
+  copyText(buildClipboardData(cx,car)).then(()=>{
     const b=document.getElementById('rbtn');
-    if(b){b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy Script Again',2000);}
+    if(b){b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy Data Again',2000);}
   });
+}
+
+function markSetupDone(){
+  localStorage.setItem('scriptable_setup','1');
 }
 
 function copyText(t){
