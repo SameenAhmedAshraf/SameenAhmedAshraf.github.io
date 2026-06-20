@@ -221,6 +221,8 @@ function fillScript(d) {
     completion({hit: hit, url: location.href, fields: fields});
   }
 
+  var totalHit = 0;
+
   // Phase 1 — click "Visitor Parking" (skip if form already visible)
   var p1 = 10;
   function phase1() {
@@ -239,13 +241,51 @@ function fillScript(d) {
     if (--p2 > 0) { setTimeout(phase2, 300); } else { phase3(); }
   }
 
-  // Phase 3 — fill the form (brief pause first so React finishes mounting)
+  // Phase 3 — fill vehicle info (brief pause first so React finishes mounting)
   var p3 = 15;
   function phase3() { setTimeout(phase3fill, 400); }
   function phase3fill() {
     var hit = fillAll();
-    if (hit > 0) { done(hit); return; }
+    if (hit > 0) { totalHit += hit; setTimeout(phase4, 600); return; }
     if (--p3 > 0) { setTimeout(phase3fill, 300); } else { done(0); }
+  }
+
+  // Phase 4 — click "Next" to proceed to the email step
+  var p4 = 15;
+  function phase4() {
+    var btn = findBtn(/^next$/i) || findBtn(/^continue$/i) || findBtn(/^proceed$/i);
+    if (btn) { btn.click(); setTimeout(phase5, 800); return; }
+    // Email already visible on same page — go straight to phase 5
+    if (emailInput()) { phase5(); return; }
+    if (--p4 > 0) { setTimeout(phase4, 300); } else { done(totalHit); }
+  }
+
+  // Phase 5 — fill the email field
+  var p5 = 15;
+  function phase5() {
+    var el = emailInput();
+    if (el) {
+      if (d.email) nv(el, d.email);
+      setTimeout(phase6, 500);
+      return;
+    }
+    if (!d.email) { done(totalHit); return; }
+    if (--p5 > 0) { setTimeout(phase5, 300); } else { phase6(); }
+  }
+
+  function emailInput() {
+    return document.querySelector(
+      'input[type="email"],input[name*="email" i],input[id*="email" i],input[placeholder*="email" i]'
+    );
+  }
+
+  // Phase 6 — click "Send" / submit
+  var p6 = 10;
+  function phase6() {
+    var btn = findBtn(/^send$/i) || findBtn(/^submit$/i)
+           || findBtn(/^register/i) || findBtn(/^confirm/i) || findBtn(/^finish/i);
+    if (btn) { btn.click(); setTimeout(function(){ done(totalHit); }, 500); return; }
+    if (--p6 > 0) { setTimeout(phase6, 300); } else { done(totalHit); }
   }
 
   phase1();
