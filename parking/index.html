@@ -114,10 +114,10 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function selC(){return complexes.find(c=>c.id===S.sel.cid)}
 function selCar(){return cars.find(c=>c.id===S.sel.carid)}
 
-// ── Build register2park URL with encoded form data ─────────────────────────────
-// Data travels as ?pf=base64(JSON) — the userscript on register2park.com reads it
-function buildRegisterURL(cx, car){
-  const data = {
+// ── Build clipboard JSON for Scriptable ────────────────────────────────────────
+function buildClipboardData(cx, car){
+  return JSON.stringify({
+    url:   cx.url   || 'https://www.register2park.com/',
     apt:   cx.apt   || '',
     code:  cx.code  || '',
     make:  car.make  || '',
@@ -126,10 +126,7 @@ function buildRegisterURL(cx, car){
     color: car.color || '',
     plate: car.plate || '',
     state: car.state || '',
-  };
-  const base = cx.url || 'https://www.register2park.com/';
-  const pf   = btoa(JSON.stringify(data));
-  return base + (base.includes('?') ? '&' : '?') + 'pf=' + encodeURIComponent(pf);
+  });
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -141,7 +138,7 @@ function render(){
   h+=`</div><div class="tabs">${renderTabs()}</div>`;
   if(S.modal==='car') h+=modalCar();
   else if(S.modal==='complex') h+=modalComplex();
-  else if(S.modal==='setup') h+=modalSetup();
+  else if(S.modal==='autofill') h+=modalAutoFill();
   document.getElementById('app').innerHTML=h;
 }
 
@@ -198,7 +195,7 @@ function viewReg(){
   </div>
 
   <button class="btn ${canGo?'green':''}" ${canGo?'':'disabled'} onclick="doRegister()" style="margin-top:${cars.length?'16px':'0'}">
-    🚗 Register Parking
+    🚗 Auto-Fill Registration Form
   </button>`;
 }
 
@@ -246,55 +243,55 @@ function viewComplexes(){
   <div class="info">💡 To find the URL: open register2park.com in Safari → select your complex → copy the page URL → paste here.</div>`;
 }
 
-// ── Setup modal (shown once until user confirms) ───────────────────────────────
-function modalSetup(){
+// ── Auto-fill modal (Scriptable flow) ─────────────────────────────────────────
+function modalAutoFill(){
+  const cx=selC(), car=selCar();
+  const scriptableInstalled=localStorage.getItem('scriptable_setup');
   return `
   <div class="overlay">
     <div class="sheet">
       <div class="handle"></div>
       <div class="mnav">
         <button class="nav-btn" onclick="closeModal()">Cancel</button>
-        <span class="ttl">One-Time Setup</span>
+        <span class="ttl">Auto-Fill</span>
         <span style="min-width:60px"></span>
       </div>
-      <div class="info" style="margin-top:0">
-        Install <strong>Userscripts</strong> — a free, open-source Safari extension
-        (<a href="https://github.com/quoid/userscripts" target="_blank" style="color:var(--blue)">MIT on GitHub</a>).
-        Do this once and registration is fully automatic forever.
-      </div>
+      ${!scriptableInstalled?`
+      <div class="info">First-time setup: install <strong>Scriptable</strong> (free on the App Store) and add the ParkFill script once.</div>
       <div class="card" style="margin-bottom:0">
         <div class="af-step">
           <div class="af-num">1</div>
-          <div class="af-body">
-            Search <strong>"Userscripts"</strong> in the App Store and install it<br>
-            <span style="font-size:13px;color:var(--secondary)">Free · by Justin Warrenfeltz · open source on GitHub</span>
-          </div>
+          <div class="af-body">Search <strong>"Scriptable"</strong> in the App Store and install it<br><span style="font-size:13px;color:var(--secondary)">Free · by Simon Støvring</span></div>
         </div>
         <div class="af-step">
           <div class="af-num">2</div>
-          <div class="af-body">
-            Go to <strong>Settings → Safari → Extensions → Userscripts</strong><br>
-            Turn it <strong>On</strong> and allow access to all websites
-          </div>
+          <div class="af-body">Open Scriptable → tap <strong>+</strong> → tap the script name at top and rename it exactly <strong>ParkFill</strong></div>
         </div>
         <div class="af-step">
           <div class="af-num">3</div>
-          <div class="af-body">
-            Open this link in Safari to install the fill script:<br>
-            <a href="/parking/parkfill.user.js" target="_blank" style="font-weight:600">sameenahmedashraf.github.io/parking/parkfill.user.js →</a><br>
-            <span style="font-size:13px;color:var(--secondary)">Userscripts will prompt "Install" — tap it</span>
-          </div>
+          <div class="af-body">In Safari open <a href="/parking/parkfill.js" target="_blank"><strong>this link</strong></a> → Select All → Copy → switch back to Scriptable → paste → tap Done</div>
         </div>
         <div class="af-step">
           <div class="af-num">4</div>
-          <div class="af-body">
-            Come back here and tap <strong>Register Parking</strong><br>
-            The form fills by itself when register2park.com opens 🎉
-          </div>
+          <div class="af-body">Come back here and tap <strong>Done — I've set up Scriptable</strong></div>
         </div>
       </div>
-      <button class="btn green" style="margin-top:12px" onclick="doneSetup()">I've done the setup — Let's go!</button>
-      <div style="height:8px"></div>
+      <button class="btn green" style="margin-top:12px" onclick="markSetupDone()">Done — I've set up Scriptable</button>
+      <div style="height:8px"></div>`:`
+      <div class="info ok">Data copied to clipboard! Now run the ParkFill script in Scriptable to auto-fill the form.</div>
+      <div class="card" style="margin-bottom:0">
+        <div class="af-step">
+          <div class="af-num">1</div>
+          <div class="af-body">Open <strong>Scriptable</strong> and run <strong>ParkFill</strong><br><span style="font-size:13px;color:var(--secondary)">Or tap the Scriptable widget if you added one</span></div>
+        </div>
+        <div class="af-step">
+          <div class="af-num">2</div>
+          <div class="af-body">ParkFill opens register2park.com and fills in all the fields automatically 🎉</div>
+        </div>
+      </div>
+      <button class="btn" id="rbtn" style="margin-top:12px;background:var(--secondary)" onclick="reCopy()">📋 Copy Data Again</button>
+      <a href="scriptable:///run?scriptName=ParkFill" class="btn green" style="margin-top:8px;text-align:center;text-decoration:none;display:block">▶ Open Scriptable → ParkFill</a>
+      <div style="height:8px"></div>`}
     </div>
   </div>`;
 }
@@ -380,27 +377,20 @@ function closeModal(){S.modal=null;render()}
 
 function doRegister(){
   const cx=selC(), car=selCar(); if(!cx||!car) return;
-  if(!localStorage.getItem('us_setup')){ S.modal='setup'; render(); return; }
-  // Open register2park.com with data encoded in ?pf= param — userscript does the rest
-  window.open(buildRegisterURL(cx, car), '_blank');
+  copyText(buildClipboardData(cx,car)).finally(()=>{S.modal='autofill';render()});
 }
 
-function doneSetup(){
-  localStorage.setItem('us_setup','1');
+function markSetupDone(){
+  localStorage.setItem('scriptable_setup','1');
   closeModal();
-  // Now actually do the registration
-  const cx=selC(), car=selCar();
-  if(cx&&car) window.open(buildRegisterURL(cx, car), '_blank');
+  doRegister();
 }
 
-function copyText(t){
-  if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
-  return new Promise((res,rej)=>{
-    const el=document.createElement('textarea');
-    el.value=t;el.style.cssText='position:fixed;opacity:0';
-    document.body.appendChild(el);el.focus();el.select();
-    try{document.execCommand('copy')?res():rej();}catch(e){rej(e);}
-    document.body.removeChild(el);
+function reCopy(){
+  const cx=selC(), car=selCar(); if(!cx||!car) return;
+  copyText(buildClipboardData(cx,car)).then(()=>{
+    const b=document.getElementById('rbtn');
+    if(b){b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy Data Again',2000);}
   });
 }
 
