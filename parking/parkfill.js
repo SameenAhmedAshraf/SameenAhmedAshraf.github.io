@@ -33,7 +33,7 @@ async function main() {
     a.message = (result && result.fields && result.fields.length > 0
       ? "Found inputs but couldn't match them:\n" + result.fields.join(', ') + "\n\n"
       : "No form inputs found.\n\n") +
-      "URL: " + (result ? result.url : d.url) + "\n\nMake sure the complex URL in the Park Register app points to the actual registration form page.";
+      "URL: " + (result ? result.url : d.url) + "\n\nMake sure the complex URL in the app points to the actual registration form page.";
     a.addAction("Open anyway");
     a.addCancelAction("Cancel");
     const choice = await a.present();
@@ -51,17 +51,25 @@ function fillScript(d) {
   return `(function() {
   var d = ${safe};
 
+  // React-compatible input fill: uses native setter + InputEvent with data
   function nv(el, v) {
-    if (!el || !v) return false;
+    if (!el || v === undefined || v === null || v === '') return false;
+    var s = String(v);
+    el.focus();
     try {
       var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
                || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-      if (desc && desc.set) desc.set.call(el, v);
+      if (desc && desc.set) desc.set.call(el, s);
     } catch(e) {}
-    el.value = v;
-    ['input','change','blur'].forEach(function(t){
-      el.dispatchEvent(new Event(t, {bubbles:true}));
-    });
+    el.value = s;
+    el.dispatchEvent(new Event('focus', {bubbles:true}));
+    try {
+      el.dispatchEvent(new InputEvent('input', {bubbles:true, cancelable:true, inputType:'insertText', data:s}));
+    } catch(e) {
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+    el.dispatchEvent(new Event('blur', {bubbles:true}));
     return true;
   }
 
@@ -73,9 +81,8 @@ function fillScript(d) {
           || o.text.toLowerCase().startsWith(v.toLowerCase());
     });
     if (m) el.value = m.value;
-    ['change','blur'].forEach(function(t){
-      el.dispatchEvent(new Event(t, {bubbles:true}));
-    });
+    el.dispatchEvent(new Event('change', {bubbles:true}));
+    el.dispatchEvent(new Event('blur', {bubbles:true}));
     return !!m;
   }
 
@@ -96,12 +103,36 @@ function fillScript(d) {
     });
   }
 
+  // Find the input associated with a label, handling wrapper divs
+  function labelEl(lbl) {
+    if (lbl.control) return lbl.control;
+    if (lbl.htmlFor) return document.getElementById(lbl.htmlFor);
+    var inner = lbl.querySelector('input,select,textarea');
+    if (inner) return inner;
+    var sib = lbl.nextElementSibling;
+    if (sib) {
+      if (/INPUT|SELECT|TEXTAREA/.test(sib.tagName)) return sib;
+      var sibInner = sib.querySelector('input,select,textarea');
+      if (sibInner) return sibInner;
+    }
+    if (lbl.parentElement) return lbl.parentElement.querySelector('input,select,textarea');
+    return null;
+  }
+
+  // Returns true if the registration form inputs are already on screen
+  function formVisible() {
+    var labels = Array.from(document.querySelectorAll('label'));
+    return labels.some(function(l){ return /plate|make|model|apartment|unit/i.test(l.textContent); })
+        || !!document.querySelector('input[placeholder*="plate" i],input[placeholder*="make" i],input[placeholder*="apt" i]');
+  }
+
   function fillAll() {
     var hit = 0;
 
     if (d.apt) hit += q([
       'input[name="unit"]','input[name="unit_number"]','input[name="apartment"]',
       'input[name="apt"]','input[name="unitNumber"]','input[name="apt_number"]',
+      'input[name="apartment_number"]',
       'input[id*="unit" i]','input[id*="apt" i]','input[id*="apartment" i]',
       'input[placeholder*="unit" i]','input[placeholder*="apt" i]',
       'input[placeholder*="apartment" i]','input[placeholder*="suite" i]',
@@ -113,13 +144,23 @@ function fillScript(d) {
     if (d.year)  hit += q(['input[name="year"]','input[name="vehicle_year"]','input[id*="year" i]','input[placeholder*="year" i]','[aria-label*="year" i]'], d.year) ? 1 : 0;
     if (d.color) hit += q(['input[name="color"]','input[name="vehicle_color"]','input[id*="color" i]','input[placeholder*="color" i]','[aria-label*="color" i]'], d.color) ? 1 : 0;
 
-    if (d.plate) hit += q([
-      'input[name="plate"]','input[name="license_plate"]','input[name="license"]',
-      'input[name="licensePlate"]','input[name="plateNumber"]',
-      'input[id*="plate" i]','input[id*="license" i]',
-      'input[placeholder*="plate" i]','input[placeholder*="license" i]',
-      '[aria-label*="plate" i]','[aria-label*="license" i]'
-    ], d.plate) ? 1 : 0;
+    // Fill both plate and confirm-plate fields
+    if (d.plate) {
+      hit += q([
+        'input[name="plate"]','input[name="license_plate"]','input[name="license"]',
+        'input[name="licensePlate"]','input[name="plateNumber"]',
+        'input[id*="plate" i]','input[id*="license" i]',
+        'input[placeholder*="plate" i]','input[placeholder*="license" i]',
+        '[aria-label*="plate" i]','[aria-label*="license" i]'
+      ], d.plate) ? 1 : 0;
+      // Confirm plate fields
+      q([
+        'input[name="confirm_plate"]','input[name="confirm_license_plate"]',
+        'input[name="confirmPlate"]','input[name="plate_confirm"]',
+        'input[id*="confirm" i][id*="plate" i]','input[id*="confirm" i][id*="license" i]',
+        'input[placeholder*="confirm" i]'
+      ], d.plate);
+    }
 
     if (d.state) {
       q(['select[name*="state" i]','select[id*="state" i]','select[aria-label*="state" i]'], d.state, true);
@@ -134,9 +175,10 @@ function fillScript(d) {
 
     if (d.code) q(['input[name*="property_code" i]','input[name*="code" i]','input[id*="code" i]','input[placeholder*="code" i]'], d.code);
 
+    // Label-text fallback — handles any markup structure
     document.querySelectorAll('label').forEach(function(lbl) {
       var t  = lbl.textContent.toLowerCase().trim();
-      var el = lbl.control || document.getElementById(lbl.htmlFor) || lbl.querySelector('input,select,textarea') || lbl.nextElementSibling;
+      var el = labelEl(lbl);
       if (!el) return;
       var tag = el.tagName;
       if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
@@ -161,30 +203,30 @@ function fillScript(d) {
     completion({hit: hit, url: location.href, fields: fields});
   }
 
-  // Phase 1 — click "Visitor Parking"
-  var p1 = 15;
+  // Phase 1 — click "Visitor Parking" (skip if form already visible)
+  var p1 = 10;
   function phase1() {
+    if (formVisible()) { phase3(); return; }
     var btn = findBtn(/visitor.?parking/i);
-    if (btn) { btn.click(); setTimeout(phase2, 700); return; }
+    if (btn) { btn.click(); setTimeout(phase2, 600); return; }
     if (--p1 > 0) { setTimeout(phase1, 300); } else { phase3(); }
   }
 
-  // Phase 2 — click "Next" / "Continue"
-  var p2 = 15;
+  // Phase 2 — click "Next" only if form NOT yet visible
+  var p2 = 10;
   function phase2() {
+    if (formVisible()) { phase3(); return; }
     var btn = findBtn(/^next$/i) || findBtn(/^continue$/i) || findBtn(/^proceed$/i);
-    if (btn) { btn.click(); setTimeout(phase3, 700); return; }
-    var hit = fillAll();
-    if (hit > 0) { done(hit); return; }
+    if (btn) { btn.click(); setTimeout(phase3, 600); return; }
     if (--p2 > 0) { setTimeout(phase2, 300); } else { phase3(); }
   }
 
   // Phase 3 — fill the form
-  var p3 = 20;
+  var p3 = 15;
   function phase3() {
     var hit = fillAll();
     if (hit > 0) { done(hit); return; }
-    if (--p3 > 0) { setTimeout(phase3, 400); } else { done(0); }
+    if (--p3 > 0) { setTimeout(phase3, 300); } else { done(0); }
   }
 
   phase1();

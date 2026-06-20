@@ -1,4 +1,4 @@
-const CACHE = 'park-register-v3';
+const CACHE = 'park-register-v4';
 const ASSETS = ['/parking/', '/parking/index.html', '/parking/manifest.json'];
 
 self.addEventListener('install', e => {
