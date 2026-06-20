@@ -24,21 +24,37 @@ async function main() {
 
   const wv = new WebView();
   await wv.loadURL(d.url);
-  await wv.evaluateJavaScript(fillScript(d));
-  await wv.present(false);
+
+  // Wait up to 15 seconds for SPA to render, then get results back via completion()
+  const result = await wv.evaluateJavaScript(fillScript(d), true);
+
+  if (!result || result.hit === 0) {
+    const a = new Alert();
+    a.title = "ParkFill — Form Not Found";
+    a.message = (result && result.fields && result.fields.length > 0
+      ? "Found these inputs but couldn't match them:\n" + result.fields.join(', ') + "\n\n"
+      : "No form inputs found on this page.\n\n") +
+      "URL opened: " + (result && result.url ? result.url : d.url) + "\n\n" +
+      "Fix: In the Park Register app → Complexes tab → edit your complex → paste the URL of the actual registration FORM page (not the homepage).";
+    a.addAction("Open site anyway");
+    a.addCancelAction("Cancel");
+    const choice = await a.present();
+    if (choice === 0) await wv.present(false);
+  } else {
+    await wv.present(false);
+  }
 }
 
 function fillScript(d) {
-  // Serialize data into the script so it's available inside the page context
   const safe = JSON.stringify(d)
     .replace(/</g, '\\u003C')
     .replace(/>/g, '\\u003E');
 
-  return `(function go(tries) {
+  return `(function run(tries) {
   var d = ${safe};
 
   function nv(el, v) {
-    if (!el) return false;
+    if (!el || !v) return false;
     try {
       var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
                || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
@@ -52,13 +68,13 @@ function fillScript(d) {
   }
 
   function ns(el, v) {
-    if (!el) return false;
+    if (!el || !v) return false;
     var m = Array.from(el.options).find(function(o){
       return o.value.toLowerCase() === v.toLowerCase()
           || o.text.toLowerCase()  === v.toLowerCase()
           || o.text.toLowerCase().startsWith(v.toLowerCase());
     });
-    if (m) el.value = m.value;
+    if (m) { el.value = m.value; }
     ['change','blur'].forEach(function(t){
       el.dispatchEvent(new Event(t, {bubbles:true}));
     });
@@ -75,45 +91,83 @@ function fillScript(d) {
 
   var hit = 0;
 
-  if (d.apt)   hit += q(['input[name="unit"]','input[name="unit_number"]','input[name="apartment"]',
-                          'input[name="apt"]','input[id*="unit" i]','input[placeholder*="unit" i]',
-                          'input[placeholder*="apt" i]','input[placeholder*="apartment" i]'], d.apt) ? 1 : 0;
+  // Apartment / unit
+  if (d.apt) hit += q([
+    'input[name="unit"]','input[name="unit_number"]','input[name="apartment"]',
+    'input[name="apt"]','input[name="unitNumber"]','input[name="apt_number"]',
+    'input[id*="unit" i]','input[id*="apt" i]','input[id*="apartment" i]',
+    'input[placeholder*="unit" i]','input[placeholder*="apt" i]',
+    'input[placeholder*="apartment" i]','input[placeholder*="suite" i]',
+    '[data-field*="unit" i]','[data-field*="apt" i]',
+    '[aria-label*="unit" i]','[aria-label*="apt" i]','[aria-label*="apartment" i]'
+  ], d.apt) ? 1 : 0;
 
-  if (d.make)  hit += q(['input[name="make"]','input[id*="make" i]','input[placeholder*="make" i]'], d.make)  ? 1 : 0;
-  if (d.model) hit += q(['input[name="model"]','input[id*="model" i]','input[placeholder*="model" i]'], d.model) ? 1 : 0;
-  if (d.year)  hit += q(['input[name="year"]','input[id*="year" i]','input[placeholder*="year" i]'], d.year)  ? 1 : 0;
-  if (d.color) hit += q(['input[name="color"]','input[id*="color" i]','input[placeholder*="color" i]'], d.color) ? 1 : 0;
+  // Vehicle
+  if (d.make)  hit += q(['input[name="make"]','input[name="vehicle_make"]','input[name="car_make"]',
+                          'input[id*="make" i]','input[placeholder*="make" i]',
+                          '[aria-label*="make" i]'], d.make) ? 1 : 0;
+  if (d.model) hit += q(['input[name="model"]','input[name="vehicle_model"]','input[name="car_model"]',
+                          'input[id*="model" i]','input[placeholder*="model" i]',
+                          '[aria-label*="model" i]'], d.model) ? 1 : 0;
+  if (d.year)  hit += q(['input[name="year"]','input[name="vehicle_year"]','input[name="car_year"]',
+                          'input[id*="year" i]','input[placeholder*="year" i]',
+                          '[aria-label*="year" i]'], d.year) ? 1 : 0;
+  if (d.color) hit += q(['input[name="color"]','input[name="vehicle_color"]','input[name="car_color"]',
+                          'input[id*="color" i]','input[placeholder*="color" i]',
+                          '[aria-label*="color" i]'], d.color) ? 1 : 0;
 
-  if (d.plate) hit += q(['input[name="plate"]','input[name="license_plate"]','input[name="license"]',
-                          'input[id*="plate" i]','input[placeholder*="plate" i]',
-                          'input[placeholder*="license" i]'], d.plate) ? 1 : 0;
+  // License plate
+  if (d.plate) hit += q([
+    'input[name="plate"]','input[name="license_plate"]','input[name="license"]',
+    'input[name="licensePlate"]','input[name="licenseplate"]','input[name="plateNumber"]',
+    'input[id*="plate" i]','input[id*="license" i]',
+    'input[placeholder*="plate" i]','input[placeholder*="license" i]',
+    '[aria-label*="plate" i]','[aria-label*="license" i]'
+  ], d.plate) ? 1 : 0;
 
-  if (d.state) { q(['select[name*="state" i]','select[id*="state" i]'], d.state, true);
-                 q(['input[name*="state" i]','input[id*="state" i]'], d.state); }
+  // State
+  if (d.state) {
+    q(['select[name*="state" i]','select[id*="state" i]','select[aria-label*="state" i]'], d.state, true);
+    q(['input[name*="state" i]','input[id*="state" i]'], d.state);
+  }
 
-  if (d.code)  q(['input[name*="property_code" i]','input[name*="code" i]','input[id*="code" i]'], d.code);
+  // Property/complex code
+  if (d.code) q([
+    'input[name*="property_code" i]','input[name*="propertyCode" i]',
+    'input[name*="code" i]','input[id*="code" i]',
+    'input[placeholder*="code" i]'
+  ], d.code);
 
-  // Label-based fallback for unusual markup
+  // Label-text fallback
   document.querySelectorAll('label').forEach(function(lbl) {
     var t  = lbl.textContent.toLowerCase().trim();
-    var el = lbl.control || document.getElementById(lbl.htmlFor) || lbl.nextElementSibling;
+    var el = lbl.control || document.getElementById(lbl.htmlFor) || lbl.querySelector('input,select,textarea') || lbl.nextElementSibling;
     if (!el) return;
     var tag = el.tagName;
     if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
-    if (/unit|apt|apartment/.test(t) && d.apt)   { nv(el, d.apt);   hit++; }
-    else if (/\bmake\b/.test(t) && d.make)        { nv(el, d.make);  hit++; }
-    else if (/\bmodel\b/.test(t) && d.model)      { nv(el, d.model); hit++; }
-    else if (/\byear\b/.test(t) && d.year)        { nv(el, d.year);  hit++; }
-    else if (/color/.test(t) && d.color)          { nv(el, d.color); hit++; }
-    else if (/plate|license/.test(t) && d.plate)  { nv(el, d.plate); hit++; }
-    else if (/state/.test(t) && tag === 'SELECT' && d.state) ns(el, d.state);
+    if      (/unit|apt|apartment|suite/.test(t) && d.apt)   { if(nv(el, d.apt))   hit++; }
+    else if (/\bmake\b/.test(t) && d.make)                   { if(nv(el, d.make))  hit++; }
+    else if (/\bmodel\b/.test(t) && d.model)                 { if(nv(el, d.model)) hit++; }
+    else if (/\byear\b/.test(t) && d.year)                   { if(nv(el, d.year))  hit++; }
+    else if (/colou?r/.test(t) && d.color)                   { if(nv(el, d.color)) hit++; }
+    else if (/plate|licen/.test(t) && d.plate)               { if(nv(el, d.plate)) hit++; }
+    else if (/state|province/.test(t) && tag === 'SELECT' && d.state) ns(el, d.state);
   });
 
-  // If nothing filled yet the SPA hasn't rendered — retry up to 12 times (~8 sec)
+  // Retry if nothing filled yet (SPA still rendering)
   if (hit === 0 && tries > 0) {
-    setTimeout(function() { go(tries - 1); }, 700);
+    setTimeout(function() { run(tries - 1); }, 750);
+    return;
   }
-})(12);`;
+
+  // Done — return diagnostics so Scriptable can show an alert if nothing filled
+  var inputs = Array.from(document.querySelectorAll('input,select,textarea'));
+  var fields = inputs.map(function(el) {
+    return (el.name || el.id || el.getAttribute('aria-label') || el.placeholder || el.tagName).slice(0,30);
+  }).filter(Boolean).slice(0,12);
+  completion({hit: hit, url: location.href, fields: fields});
+
+})(20);`;
 }
 
 main();
