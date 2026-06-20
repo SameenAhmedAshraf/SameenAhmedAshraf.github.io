@@ -51,23 +51,41 @@ function fillScript(d) {
   return `(function() {
   var d = ${safe};
 
-  // React-compatible input fill: uses native setter + InputEvent with data
   function nv(el, v) {
-    if (!el || v === undefined || v === null || v === '') return false;
+    if (!el || v === undefined || v === null) return false;
     var s = String(v);
+    if (!s) return false;
     el.focus();
+    el.select();
+
+    // Best path: execCommand goes through WebKit's native editing pipeline
+    // which React hooks into directly — most reliable for controlled inputs
+    var did = false;
     try {
-      var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
-               || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-      if (desc && desc.set) desc.set.call(el, s);
+      if (document.execCommand('selectAll', false, null)) {
+        did = document.execCommand('insertText', false, s);
+      }
     } catch(e) {}
-    el.value = s;
-    el.dispatchEvent(new Event('focus', {bubbles:true}));
-    try {
-      el.dispatchEvent(new InputEvent('input', {bubbles:true, cancelable:true, inputType:'insertText', data:s}));
-    } catch(e) {
+
+    if (!did) {
+      // Fallback: clear first so React sees a value change, then set
+      var desc;
+      try {
+        desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
+             || Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+      } catch(e) {}
+      if (desc && desc.set) desc.set.call(el, '');
+      el.value = '';
       el.dispatchEvent(new Event('input', {bubbles:true}));
+      if (desc && desc.set) desc.set.call(el, s);
+      el.value = s;
+      try {
+        el.dispatchEvent(new InputEvent('input', {bubbles:true, cancelable:true, inputType:'insertText', data:s}));
+      } catch(e) {
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+      }
     }
+
     el.dispatchEvent(new Event('change', {bubbles:true}));
     el.dispatchEvent(new Event('blur', {bubbles:true}));
     return true;
@@ -221,12 +239,13 @@ function fillScript(d) {
     if (--p2 > 0) { setTimeout(phase2, 300); } else { phase3(); }
   }
 
-  // Phase 3 — fill the form
+  // Phase 3 — fill the form (brief pause first so React finishes mounting)
   var p3 = 15;
-  function phase3() {
+  function phase3() { setTimeout(phase3fill, 400); }
+  function phase3fill() {
     var hit = fillAll();
     if (hit > 0) { done(hit); return; }
-    if (--p3 > 0) { setTimeout(phase3, 300); } else { done(0); }
+    if (--p3 > 0) { setTimeout(phase3fill, 300); } else { done(0); }
   }
 
   phase1();
