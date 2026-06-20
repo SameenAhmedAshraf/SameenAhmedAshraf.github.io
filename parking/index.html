@@ -10,69 +10,64 @@
 <title>Park Register</title>
 <style>
 :root {
-  --blue: #007AFF; --red: #FF3B30; --green: #34C759; --orange: #FF9500;
-  --bg: #F2F2F7; --card: #FFFFFF; --label: #000; --secondary: rgba(60,60,67,.6);
-  --tertiary: rgba(60,60,67,.3); --sep: rgba(60,60,67,.29);
-  --tab-bg: rgba(249,249,249,.94);
-  --st: env(safe-area-inset-top, 0px);
-  --sb: env(safe-area-inset-bottom, 0px);
+  --blue:#007AFF;--red:#FF3B30;--green:#34C759;--orange:#FF9500;
+  --bg:#F2F2F7;--card:#fff;--label:#000;--secondary:rgba(60,60,67,.6);
+  --tertiary:rgba(60,60,67,.3);--sep:rgba(60,60,67,.29);--tab-bg:rgba(249,249,249,.94);
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:#000; --card:#1C1C1E; --label:#fff;
-    --secondary:rgba(235,235,245,.6); --tertiary:rgba(235,235,245,.3);
-    --sep:rgba(84,84,88,.65); --tab-bg:rgba(28,28,30,.94);
-  }
+@media(prefers-color-scheme:dark){
+  :root{--bg:#000;--card:#1C1C1E;--label:#fff;--secondary:rgba(235,235,245,.6);
+    --tertiary:rgba(235,235,245,.3);--sep:rgba(84,84,88,.65);--tab-bg:rgba(28,28,30,.94)}
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--label)}
 #app{display:flex;flex-direction:column;height:100%}
-.scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb) + 56px)}
+.scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb) + 60px)}
 
-/* Tab bar */
+/* Tabs */
 .tabs{background:var(--tab-bg);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--sep);padding:6px 0 calc(var(--sb) + 2px);display:flex;flex-shrink:0}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--secondary);padding:2px 0;font-family:inherit}
 .tab.on{color:var(--blue)}
 .tab svg{width:24px;height:24px}
 .tab span{font-size:10px;font-weight:500}
 
-/* Nav bar */
+/* Nav */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--st) + 16px) 16px 8px}
 .nav-title{font-size:34px;font-weight:700}
 .nav-btn{background:none;border:none;color:var(--blue);font-size:17px;padding:8px;cursor:pointer;font-family:inherit;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .nav-sub{font-size:15px;color:var(--secondary);padding:0 16px 12px}
 
-/* Cards & rows */
+/* Cards */
 .sec{margin:20px 0 0}
 .sec-hdr{font-size:13px;color:var(--secondary);text-transform:uppercase;letter-spacing:.04em;padding:0 16px 6px}
 .card{background:var(--card);border-radius:12px;margin:0 16px;overflow:hidden}
 .row{display:flex;align-items:center;padding:12px 16px;min-height:44px;border-bottom:.5px solid var(--sep);background:none;width:100%;text-align:left;color:var(--label);cursor:pointer;font-family:inherit}
 .row:last-child{border-bottom:none}
 .row.sel{background:rgba(0,122,255,.08)}
-.row-body{flex:1;min-width:0}
-.row-title{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row-sub{font-size:14px;color:var(--secondary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row-cap{font-size:13px;color:var(--tertiary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb{flex:1;min-width:0}
+.rt{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs{font-size:14px;color:var(--secondary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc{font-size:13px;color:var(--tertiary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chk{color:var(--blue);margin-right:10px;flex-shrink:0}
 .chv{color:var(--tertiary);flex-shrink:0;margin-left:8px}
 .badge{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;font-size:11px;font-weight:600;padding:1px 6px;margin-left:5px}
 
 /* Buttons */
-.btn{display:block;width:calc(100% - 32px);margin:16px;padding:15px;border-radius:12px;border:none;font-size:17px;font-weight:600;cursor:pointer;background:var(--blue);color:#fff;font-family:inherit}
+.btn{display:block;width:calc(100% - 32px);margin:16px;padding:15px;border-radius:12px;border:none;font-size:17px;font-weight:600;cursor:pointer;background:var(--blue);color:#fff;font-family:inherit;transition:opacity .15s}
 .btn:disabled{opacity:.35}
 .btn.red{background:var(--red)}
 .btn.ghost{background:var(--card);color:var(--blue);border:.5px solid var(--sep)}
+.btn.green{background:var(--green)}
 
 /* Form */
 .ff{display:flex;align-items:center;padding:11px 16px;border-bottom:.5px solid var(--sep);min-height:44px;gap:8px}
 .ff:last-child{border-bottom:none}
 .ff label{font-size:17px;width:110px;flex-shrink:0;color:var(--label)}
 .ff input,.ff select,.ff textarea{flex:1;font-size:17px;border:none;outline:none;background:transparent;color:var(--label);font-family:inherit;min-width:0}
-.ff input::placeholder,.ff textarea::placeholder{color:var(--tertiary)}
+.ff input::placeholder{color:var(--tertiary)}
 .ff select{-webkit-appearance:none;appearance:none}
 .ff.col{flex-direction:column;align-items:stretch}
 .ff.col label{width:auto;margin-bottom:4px}
-.ff.col input{font-size:15px}
 
 /* Modal */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;flex-direction:column;justify-content:flex-end;animation:fi .2s ease}
@@ -83,25 +78,29 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 @keyframes fi{from{opacity:0}to{opacity:1}}
 @keyframes su{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-/* Fill guide */
-.fg-field{display:flex;align-items:center;padding:12px 16px;border-bottom:.5px solid var(--sep);gap:10px}
-.fg-field:last-child{border-bottom:none}
-.fg-lbl{font-size:13px;color:var(--secondary);width:96px;flex-shrink:0}
-.fg-val{flex:1;font-size:17px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.copy{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0;font-family:inherit;transition:background .15s}
-.copy.ok{background:var(--green)}
+/* Auto-fill modal */
+.af-step{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--sep)}
+.af-step:last-child{border-bottom:none}
+.af-num{width:28px;height:28px;border-radius:14px;background:var(--blue);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.af-text{flex:1;font-size:15px;line-height:1.5;color:var(--label)}
+.af-text strong{font-weight:600}
+.af-text em{font-style:normal;color:var(--blue)}
 
 /* Info banner */
 .info{margin:12px 16px;padding:12px;background:rgba(0,122,255,.1);border-radius:10px;font-size:14px;color:var(--secondary);line-height:1.5}
+.info.warn{background:rgba(255,149,0,.12);color:var(--orange)}
+.info.ok{background:rgba(52,199,89,.12);color:var(--green)}
+
+/* Success pulse */
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.pulse{animation:pulse .4s ease}
 
 /* Empty */
 .empty{text-align:center;padding:52px 16px;color:var(--secondary)}
 .empty-ico{font-size:52px;margin-bottom:12px}
 .empty h3{font-size:20px;font-weight:600;color:var(--label);margin-bottom:6px}
 
-/* URL preview */
-.url-chip{font-size:12px;color:var(--blue);padding:0 16px 8px;word-break:break-all}
-.url-warn{color:var(--red)}
+.url-warn{color:var(--red);font-size:13px}
 </style>
 </head>
 <body>
@@ -109,24 +108,25 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 const S = {
-  tab: 'reg',   // reg | people | complexes
-  modal: null,  // null | 'person' | 'vehicle' | 'complex' | 'fill'
-  sel: { cid: null, pid: null, vid: null },
-  draft: {},
-  draftVehicles: [],
-  draftVeh: {},
-  vehIdx: -1,   // -1 = new vehicle
+  tab:'reg', modal:null,
+  sel:{cid:null,pid:null,vid:null},
+  draft:{}, draftVehicles:[], draftVeh:{}, vehIdx:-1,
+  copied:false,
 };
 
+// ── Default data ──────────────────────────────────────────────────────────────
 let complexes = load('complexes') || [
-  { id: uid(), name: 'Complex 1', addr: '', url: 'https://www.register2park.com/', code: '' },
-  { id: uid(), name: 'Complex 2', addr: '', url: 'https://www.register2park.com/', code: '' },
-  { id: uid(), name: 'Complex 3', addr: '', url: 'https://www.register2park.com/', code: '' },
+  { id:uid(), name:'Luca',                  addr:'', apt:'4060', url:'https://www.register2park.com/', code:'' },
+  { id:uid(), name:'Callista Hill Country', addr:'', apt:'728',  url:'https://www.register2park.com/', code:'' },
+  { id:uid(), name:'Complex 3',             addr:'', apt:'',     url:'https://www.register2park.com/', code:'' },
 ];
 let people = load('people') || [];
 
+// Migrate: if any existing person has apt field, strip it (apt moved to complex)
+people = people.map(p => { const {apt,...rest} = p; return rest; });
+
 function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36) }
-function save(){ ls('complexes',complexes); ls('people',people) }
+function saveAll(){ ls('complexes',complexes); ls('people',people) }
 function ls(k,v){ localStorage.setItem(k,JSON.stringify(v)) }
 function load(k){ try{ return JSON.parse(localStorage.getItem(k)) }catch(e){ return null } }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
@@ -134,78 +134,225 @@ function selC(){ return complexes.find(c=>c.id===S.sel.cid) }
 function selP(){ return people.find(p=>p.id===S.sel.pid) }
 function selV(){ const p=selP(); return p&&p.vehicles&&p.vehicles.find(v=>v.id===S.sel.vid) }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Build fill script ──────────────────────────────────────────────────────────
+function buildFillScript(c, p, v){
+  const firstName = (p.name||'').split(' ')[0];
+  const lastName  = (p.name||'').split(' ').slice(1).join(' ');
+  const data = {
+    firstName, lastName, fullName: p.name||'',
+    apt: c.apt||'', phone: p.phone||'', email: p.email||'',
+    make: v.make||'', model: v.model||'', year: v.year||'',
+    color: v.color||'', plate: v.plate||'', state: v.state||'',
+    code: c.code||'',
+  };
+
+  // Minified robust fill function — targets register2park.com fields
+  // Uses multiple selector strategies so it works even if they update their markup
+  const script = `(function(){
+var d=${JSON.stringify(data)};
+function nv(el,val){
+  if(!el)return;
+  try{var s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')||
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value');
+    if(s&&s.set)s.set.call(el,val);}catch(e){el.value=val;}
+  el.value=val;
+  ['input','change','blur'].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});
+}
+function ns(el,val){
+  if(!el)return;
+  var opts=Array.from(el.options);
+  var m=opts.find(function(o){return o.value.toLowerCase()===val.toLowerCase()||o.text.toLowerCase()===val.toLowerCase();})
+    ||opts.find(function(o){return o.value.toLowerCase().startsWith(val.toLowerCase())||o.text.toLowerCase().startsWith(val.toLowerCase());});
+  if(m)el.value=m.value;
+  ['change','blur'].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});
+}
+function q(sels,val,isSelect){
+  for(var i=0;i<sels.length;i++){
+    var el=document.querySelector(sels[i]);
+    if(el){isSelect?ns(el,val):nv(el,val);return true;}
+  }return false;
+}
+function qi(attr,val,words,isSelect){
+  words.forEach(function(w){
+    ['name','id','placeholder','data-field','aria-label'].forEach(function(a){
+      try{var el=document.querySelector('['+a+'*="'+w+'" i]');
+        if(el)isSelect?ns(el,val):nv(el,val);}catch(e){}
+    });
+  });
+}
+/* Targeted selectors for common register2park.com field patterns */
+q(['input[name="firstName"]','input[name="first_name"]','input[id*="first" i]','input[placeholder*="first" i]'],d.firstName);
+q(['input[name="lastName"]','input[name="last_name"]','input[id*="last" i]','input[placeholder*="last" i]'],d.lastName);
+q(['input[name="name"]','input[id*="fullname" i]','input[placeholder*="full name" i]'],d.fullName);
+q(['input[name="unit"]','input[name="unit_number"]','input[name="apartment"]','input[name="apt"]',
+   'input[id*="unit" i]','input[placeholder*="unit" i]','input[placeholder*="apt" i]','input[placeholder*="apartment" i]'],d.apt);
+q(['input[type="tel"]','input[name="phone"]','input[name="phone_number"]',
+   'input[id*="phone" i]','input[placeholder*="phone" i]'],d.phone);
+q(['input[type="email"]','input[name="email"]','input[id*="email" i]'],d.email);
+q(['input[name="make"]','input[id*="make" i]','input[placeholder*="make" i]'],d.make);
+q(['input[name="model"]','input[id*="model" i]','input[placeholder*="model" i]'],d.model);
+q(['input[name="year"]','input[id*="year" i]','input[placeholder*="year" i]'],d.year);
+q(['input[name="color"]','input[id*="color" i]','input[placeholder*="color" i]'],d.color);
+q(['input[name="plate"]','input[name="license_plate"]','input[name="license"]',
+   'input[id*="plate" i]','input[placeholder*="plate" i]','input[placeholder*="license" i]'],d.plate);
+q(['select[name*="state" i]','select[id*="state" i]'],d.state,true);
+q(['input[name*="state" i]','input[id*="state" i]'],d.state);
+if(d.code)q(['input[name*="code" i]','input[id*="code" i]','input[name*="property" i]'],d.code);
+/* Fallback: label-based fill */
+document.querySelectorAll('label').forEach(function(lbl){
+  var t=lbl.textContent.toLowerCase().trim();
+  var target=lbl.control||document.getElementById(lbl.htmlFor)||lbl.nextElementSibling;
+  if(!target)return;
+  if(/first.?name/.test(t))nv(target,d.firstName);
+  else if(/last.?name/.test(t))nv(target,d.lastName);
+  else if(/^name$|full.?name/.test(t))nv(target,d.fullName);
+  else if(/unit|apt|apartment/.test(t))nv(target,d.apt);
+  else if(/phone|mobile/.test(t))nv(target,d.phone);
+  else if(/email/.test(t))nv(target,d.email);
+  else if(/make/.test(t))nv(target,d.make);
+  else if(/model/.test(t))nv(target,d.model);
+  else if(/year/.test(t))nv(target,d.year);
+  else if(/color/.test(t))nv(target,d.color);
+  else if(/plate|license/.test(t))nv(target,d.plate);
+  else if(/state/.test(t)&&target.tagName==='SELECT')ns(target,d.state);
+});
+alert('✅ Form filled! Review and submit.');
+})();`;
+
+  return 'javascript:' + encodeURIComponent(script);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
 function render(){
   let html = `<div class="scr" id="scr">`;
-  if(S.tab==='reg') html += viewReg();
-  else if(S.tab==='people') html += viewPeople();
-  else if(S.tab==='complexes') html += viewComplexes();
-  html += `</div><div class="tabs">${renderTabs()}</div>`;
-  if(S.modal==='person') html += modalPerson();
-  else if(S.modal==='vehicle') html += modalVehicle();
-  else if(S.modal==='complex') html += modalComplex();
-  else if(S.modal==='fill') html += modalFill();
-  document.getElementById('app').innerHTML = html;
+  if(S.tab==='reg') html+=viewReg();
+  else if(S.tab==='people') html+=viewPeople();
+  else if(S.tab==='complexes') html+=viewComplexes();
+  html+=`</div><div class="tabs">${renderTabs()}</div>`;
+  if(S.modal==='person') html+=modalPerson();
+  else if(S.modal==='vehicle') html+=modalVehicle();
+  else if(S.modal==='complex') html+=modalComplex();
+  else if(S.modal==='autofill') html+=modalAutoFill();
+  document.getElementById('app').innerHTML=html;
 }
 
 function renderTabs(){
-  const ts=[
+  return [
     {id:'reg',lbl:'Register',ico:iCar()},
     {id:'people',lbl:'People',ico:iPeople()},
     {id:'complexes',lbl:'Complexes',ico:iBuilding()},
-  ];
-  return ts.map(t=>`<button class="tab ${S.tab===t.id?'on':''}" onclick="setTab('${t.id}')">${t.ico}<span>${t.lbl}</span></button>`).join('');
+  ].map(t=>`<button class="tab ${S.tab===t.id?'on':''}" onclick="setTab('${t.id}')">${t.ico}<span>${t.lbl}</span></button>`).join('');
 }
 
-// ── Register view ─────────────────────────────────────────────────────────────
+// ── Register view ──────────────────────────────────────────────────────────────
 function viewReg(){
-  const p = selP(), v = selV(), canGo = selC()&&p&&v;
+  const p=selP(), v=selV(), c=selC();
+  const canGo = c&&p&&v;
   return `
   <div class="nav"><span class="nav-title">Register</span></div>
   <p class="nav-sub">Pick a complex and guest to register parking</p>
 
   <div class="sec"><div class="sec-hdr">Complex</div><div class="card">
-    ${complexes.map(c=>`
-      <button class="row ${S.sel.cid===c.id?'sel':''}" onclick="pickC('${c.id}')">
-        ${S.sel.cid===c.id?`<span class="chk">${iCheck()}</span>`:''}
-        <div class="row-body">
-          <div class="row-title">${esc(c.name)}</div>
-          ${c.addr?`<div class="row-sub">${esc(c.addr)}</div>`:''}
-        </div>
-      </button>`).join('')}
+    ${complexes.map(cx=>`
+    <button class="row ${S.sel.cid===cx.id?'sel':''}" onclick="pickC('${cx.id}')">
+      ${S.sel.cid===cx.id?`<span class="chk">${iCheck()}</span>`:''}
+      <div class="rb">
+        <div class="rt">${esc(cx.name)}</div>
+        ${cx.apt?`<div class="rs">Your apt: <strong>${esc(cx.apt)}</strong></div>`:''}
+      </div>
+    </button>`).join('')}
   </div></div>
 
-  <div class="sec"><div class="sec-hdr">Person</div><div class="card">
-    ${people.length===0?`<div style="padding:14px 16px;color:var(--secondary);font-size:15px">No people saved — add them in the People tab</div>`
-    :people.map(p=>`
-      <button class="row ${S.sel.pid===p.id?'sel':''}" onclick="pickP('${p.id}')">
-        ${S.sel.pid===p.id?`<span class="chk">${iCheck()}</span>`:''}
-        <div class="row-body">
-          <div class="row-title">${esc(p.name)}</div>
-          <div class="row-sub">Apt ${esc(p.apt)}${p.email?' · '+esc(p.email):''}</div>
+  <div class="sec"><div class="sec-hdr">Guest</div><div class="card">
+    ${people.length===0
+      ?`<div style="padding:14px 16px;color:var(--secondary);font-size:15px">No people saved — add them in the People tab</div>`
+      :people.map(px=>`
+      <button class="row ${S.sel.pid===px.id?'sel':''}" onclick="pickP('${px.id}')">
+        ${S.sel.pid===px.id?`<span class="chk">${iCheck()}</span>`:''}
+        <div class="rb">
+          <div class="rt">${esc(px.name)}</div>
+          <div class="rs">${px.email?esc(px.email):''}${px.phone?' · '+esc(px.phone):''}</div>
         </div>
       </button>`).join('')}
   </div></div>
 
   ${p&&p.vehicles&&p.vehicles.length?`
   <div class="sec"><div class="sec-hdr">Vehicle</div><div class="card">
-    ${p.vehicles.map(v=>`
-      <button class="row ${S.sel.vid===v.id?'sel':''}" onclick="pickV('${v.id}')">
-        ${S.sel.vid===v.id?`<span class="chk">${iCheck()}</span>`:''}
-        <div class="row-body">
-          <div class="row-title">${esc(v.year)} ${esc(v.make)} ${esc(v.model)}</div>
-          <div class="row-sub">${esc(v.plate)} · ${esc(v.state)} · ${esc(v.color)}</div>
-        </div>
-      </button>`).join('')}
-  </div></div>`:''
-  }
+    ${p.vehicles.map(vx=>`
+    <button class="row ${S.sel.vid===vx.id?'sel':''}" onclick="pickV('${vx.id}')">
+      ${S.sel.vid===vx.id?`<span class="chk">${iCheck()}</span>`:''}
+      <div class="rb">
+        <div class="rt">${esc(vx.year)} ${esc(vx.make)} ${esc(vx.model)}</div>
+        <div class="rs">${esc(vx.plate)} · ${esc(vx.state)} · ${esc(vx.color)}</div>
+      </div>
+    </button>`).join('')}
+  </div></div>`:''}
 
-  <button class="btn" ${canGo?'':'disabled'} onclick="openFill()" style="margin-top:24px">
-    Open &amp; Fill Registration Form
+  ${canGo?`
+  <div class="info" style="margin-top:20px">
+    Ready to register <strong>${esc(p.name)}</strong>'s <strong>${esc(v.year)} ${esc(v.make)}</strong>
+    at <strong>${esc(c.name)}</strong> (Apt ${esc(c.apt)})
+  </div>`:''}
+
+  <button class="btn ${canGo?'green':''}" ${canGo?'':'disabled'} onclick="startAutoFill()" style="margin-top:16px">
+    🚗 Auto-Fill Registration Form
   </button>`;
 }
 
-// ── People view ───────────────────────────────────────────────────────────────
+// ── Auto-fill modal ────────────────────────────────────────────────────────────
+function modalAutoFill(){
+  const c=selC(), p=selP(), v=selV();
+  const url = c.url||'https://www.register2park.com/';
+  const script = buildFillScript(c, p, v);
+  return `
+  <div class="overlay">
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="mnav">
+        <button class="nav-btn" onclick="closeModal()">Done</button>
+        <span class="ttl">Auto-Fill</span>
+        <span style="width:60px"></span>
+      </div>
+
+      <div class="info ok" style="margin-top:0;font-size:15px">
+        ✅ Fill script copied to clipboard! Follow the steps below:
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="af-step">
+          <div class="af-num">1</div>
+          <div class="af-text">
+            <a href="${esc(url)}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">
+              Tap here to open register2park.com →
+            </a><br>
+            <span style="color:var(--secondary);font-size:13px">The form for ${esc(c.name)} will open in a new tab</span>
+          </div>
+        </div>
+        <div class="af-step">
+          <div class="af-num">2</div>
+          <div class="af-text">Tap the <em>address bar</em> at the top of Safari</div>
+        </div>
+        <div class="af-step">
+          <div class="af-num">3</div>
+          <div class="af-text"><strong>Select All</strong> the URL text, then <em>Paste</em></div>
+        </div>
+        <div class="af-step">
+          <div class="af-num">4</div>
+          <div class="af-text">Tap <em>Go</em> — the form fills automatically! ✨</div>
+        </div>
+      </div>
+
+      <div class="info">
+        <strong>What gets filled:</strong> Apt ${esc(c.apt)} · ${esc(p.name)} · ${esc(p.phone||p.email)} · ${esc(v.year)} ${esc(v.make)} ${esc(v.model)} · ${esc(v.plate)} (${esc(v.state)})
+      </div>
+
+      <button class="btn" onclick="reCopy()" id="recopy-btn">📋 Copy Script Again</button>
+      <div style="height:8px"></div>
+    </div>
+  </div>`;
+}
+
+// ── People view ────────────────────────────────────────────────────────────────
 function viewPeople(){
   return `
   <div class="nav">
@@ -213,92 +360,43 @@ function viewPeople(){
     <button class="nav-btn" onclick="addPerson()" title="Add">${iPlus()}</button>
   </div>
   ${people.length===0?`
-  <div class="empty"><div class="empty-ico">👤</div><h3>No People Yet</h3><p>Tap + to add someone</p></div>
-  `:`
+  <div class="empty"><div class="empty-ico">👤</div><h3>No People Yet</h3><p>Tap + to add someone</p></div>`:`
   <div class="sec"><div class="card">
     ${people.map(p=>`
-      <button class="row" onclick="editPerson('${p.id}')">
-        <div class="row-body">
-          <div class="row-title">${esc(p.name)}<span class="badge">${(p.vehicles||[]).length} car${(p.vehicles||[]).length!==1?'s':''}</span></div>
-          <div class="row-sub">Apt ${esc(p.apt)}${p.phone?' · '+esc(p.phone):''}</div>
-          ${p.vehicles&&p.vehicles.length?`<div class="row-cap">${p.vehicles.map(v=>`${v.year} ${v.make} ${v.model} — ${v.plate}`).join(', ')}</div>`:''}
-        </div>
-        <span class="chv">${iChev()}</span>
-      </button>`).join('')}
+    <button class="row" onclick="editPerson('${p.id}')">
+      <div class="rb">
+        <div class="rt">${esc(p.name)}<span class="badge">${(p.vehicles||[]).length} car${(p.vehicles||[]).length!==1?'s':''}</span></div>
+        ${p.email?`<div class="rs">${esc(p.email)}</div>`:''}
+        ${p.vehicles&&p.vehicles.length?`<div class="rc">${p.vehicles.map(v=>`${v.year} ${v.make} ${v.model} — ${v.plate}`).join(', ')}</div>`:''}
+      </div>
+      <span class="chv">${iChev()}</span>
+    </button>`).join('')}
   </div></div>`}`;
 }
 
-// ── Complexes view ────────────────────────────────────────────────────────────
+// ── Complexes view ─────────────────────────────────────────────────────────────
 function viewComplexes(){
   return `
   <div class="nav"><span class="nav-title">Complexes</span></div>
-  <p class="nav-sub">Tap each complex to set its register2park.com URL</p>
+  <p class="nav-sub">Tap to configure each complex's URL and apartment</p>
   <div class="card" style="margin:0 16px">
     ${complexes.map(c=>{
-      const configured = c.url && c.url !== 'https://www.register2park.com/';
+      const ok=c.url&&c.url!=='https://www.register2park.com/';
       return `
       <button class="row" onclick="editComplex('${c.id}')">
-        <div class="row-body">
-          <div class="row-title">${esc(c.name)}</div>
-          ${c.addr?`<div class="row-sub">${esc(c.addr)}</div>`:''}
-          <div class="row-cap ${configured?'':'url-warn'}">${configured?esc(c.url):'⚠ URL not configured yet'}</div>
+        <div class="rb">
+          <div class="rt">${esc(c.name)}</div>
+          ${c.apt?`<div class="rs">Your apartment: <strong>${esc(c.apt)}</strong></div>`:''}
+          <div class="rc ${ok?'':'url-warn'}">${ok?esc(c.url):'⚠ Register2Park URL not set'}</div>
         </div>
         <span class="chv">${iChev()}</span>
       </button>`;
     }).join('')}
   </div>
-  <div class="info">💡 Go to <strong>register2park.com</strong> in Safari, navigate to your complex's registration page, copy the URL from the address bar, and paste it here.</div>`;
+  <div class="info">💡 Open register2park.com, navigate to your complex's registration page, copy the URL, and paste it here.</div>`;
 }
 
-// ── Fill Guide Modal ──────────────────────────────────────────────────────────
-function modalFill(){
-  const c=selC(), p=selP(), v=selV();
-  const firstName=(p.name||'').split(' ')[0];
-  const lastName=(p.name||'').split(' ').slice(1).join(' ');
-  const url = c.url||'https://www.register2park.com/';
-  const fields=[
-    ['First Name', firstName],
-    ['Last Name', lastName],
-    ['Full Name', p.name],
-    ['Apartment', p.apt],
-    ['Email', p.email],
-    ['Phone', p.phone],
-    ['Car Make', v.make],
-    ['Car Model', v.model],
-    ['Year', v.year],
-    ['Color', v.color],
-    ['License Plate', v.plate],
-    ['State', v.state],
-    ['Property Code', c.code],
-  ].filter(([,val])=>val);
-
-  return `
-  <div class="overlay" onclick="bgClose(event)">
-    <div class="sheet">
-      <div class="handle"></div>
-      <div class="mnav">
-        <button class="nav-btn" onclick="closeModal()">Done</button>
-        <span class="ttl">Fill Guide</span>
-        <a href="${esc(url)}" target="_blank" style="text-decoration:none">
-          <button class="nav-btn" style="font-weight:600">Open Site</button>
-        </a>
-      </div>
-      <div class="info" style="margin-top:0">
-        Tap <strong>Open Site</strong> to open the form in a new tab. Tap <strong>Copy</strong> next to each field, then paste it into the form.
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        ${fields.map(([lbl,val],i)=>`
-        <div class="fg-field">
-          <div class="fg-lbl">${esc(lbl)}</div>
-          <div class="fg-val">${esc(val)}</div>
-          <button class="copy" id="cp${i}" onclick="doCopy(${JSON.stringify(esc(val))},'cp${i}')">Copy</button>
-        </div>`).join('')}
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── Person Modal ──────────────────────────────────────────────────────────────
+// ── Person Modal ───────────────────────────────────────────────────────────────
 function modalPerson(){
   const d=S.draft, isNew=!d.id, vs=S.draftVehicles||[];
   return `
@@ -313,7 +411,6 @@ function modalPerson(){
       <div class="sec-hdr">Info</div>
       <div class="card">
         <div class="ff"><label>Name</label><input placeholder="Full Name" value="${esc(d.name||'')}" oninput="S.draft.name=this.value"></div>
-        <div class="ff"><label>Apartment</label><input placeholder="204" inputmode="numeric" value="${esc(d.apt||'')}" oninput="S.draft.apt=this.value"></div>
         <div class="ff"><label>Email</label><input type="email" placeholder="email@example.com" autocapitalize="none" value="${esc(d.email||'')}" oninput="S.draft.email=this.value"></div>
         <div class="ff"><label>Phone</label><input type="tel" placeholder="(555) 000-0000" value="${esc(d.phone||'')}" oninput="S.draft.phone=this.value"></div>
       </div>
@@ -321,14 +418,14 @@ function modalPerson(){
       <div class="card">
         ${vs.map((v,i)=>`
         <button class="row" onclick="editVeh(${i})">
-          <div class="row-body">
-            <div class="row-title">${esc(v.year)} ${esc(v.make)} ${esc(v.model)}</div>
-            <div class="row-sub">${esc(v.color)} · ${esc(v.plate)} (${esc(v.state)})</div>
+          <div class="rb">
+            <div class="rt">${esc(v.year)} ${esc(v.make)} ${esc(v.model)}</div>
+            <div class="rs">${esc(v.color)} · ${esc(v.plate)} (${esc(v.state)})</div>
           </div>
           <span class="chv">${iChev()}</span>
         </button>`).join('')}
         <button class="row" style="color:var(--blue)" onclick="addVeh()">
-          <div class="row-body"><div class="row-title">+ Add Vehicle</div></div>
+          <div class="rb"><div class="rt">+ Add Vehicle</div></div>
         </button>
       </div>
       ${!isNew?`<button class="btn red" style="margin-top:24px" onclick="delPerson('${d.id}')">Delete Person</button>`:''}
@@ -337,7 +434,7 @@ function modalPerson(){
   </div>`;
 }
 
-// ── Vehicle Modal ─────────────────────────────────────────────────────────────
+// ── Vehicle Modal ──────────────────────────────────────────────────────────────
 const STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
 
 function modalVehicle(){
@@ -363,7 +460,7 @@ function modalVehicle(){
         <div class="ff"><label>Plate #</label><input placeholder="ABC1234" autocapitalize="characters" value="${esc(v.plate||'')}" oninput="S.draftVeh.plate=this.value.toUpperCase()"></div>
         <div class="ff"><label>State</label>
           <select onchange="S.draftVeh.state=this.value">
-            ${STATES.map(s=>`<option value="${s}"${v.state===s?' selected':''}>${s}</option>`).join('')}
+            ${STATES.map(s=>`<option value="${s}"${(v.state||'TX')===s?' selected':''}>${s}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -373,7 +470,7 @@ function modalVehicle(){
   </div>`;
 }
 
-// ── Complex Modal ─────────────────────────────────────────────────────────────
+// ── Complex Modal ──────────────────────────────────────────────────────────────
 function modalComplex(){
   const d=S.draft;
   return `
@@ -389,6 +486,7 @@ function modalComplex(){
       <div class="card">
         <div class="ff"><label>Name</label><input placeholder="Complex Name" value="${esc(d.name||'')}" oninput="S.draft.name=this.value"></div>
         <div class="ff"><label>Address</label><input placeholder="123 Main St" value="${esc(d.addr||'')}" oninput="S.draft.addr=this.value"></div>
+        <div class="ff"><label>Your Apt #</label><input placeholder="e.g. 4060" inputmode="numeric" value="${esc(d.apt||'')}" oninput="S.draft.apt=this.value"></div>
       </div>
       <div class="sec-hdr" style="margin-top:20px">Register2Park</div>
       <div class="card">
@@ -400,7 +498,7 @@ function modalComplex(){
         </div>
         <div class="ff"><label>Property Code</label><input placeholder="Optional" autocapitalize="none" value="${esc(d.code||'')}" oninput="S.draft.code=this.value"></div>
       </div>
-      <div class="info">Open register2park.com in Safari → find your complex → navigate to its registration page → copy the URL from the address bar → paste above.</div>
+      <div class="info">Open register2park.com in Safari → navigate to your complex → copy the URL from the address bar → paste above.</div>
     </div>
   </div>`;
 }
@@ -408,48 +506,83 @@ function modalComplex(){
 // ── Actions ───────────────────────────────────────────────────────────────────
 function setTab(t){ S.tab=t; render() }
 function pickC(id){ S.sel.cid=id; render() }
-function pickP(id){ S.sel.pid=id; const p=people.find(x=>x.id===id); S.sel.vid=p&&p.vehicles&&p.vehicles.length?p.vehicles[0].id:null; render() }
+function pickP(id){
+  S.sel.pid=id;
+  const p=people.find(x=>x.id===id);
+  S.sel.vid=p&&p.vehicles&&p.vehicles.length?p.vehicles[0].id:null;
+  render();
+}
 function pickV(id){ S.sel.vid=id; render() }
-
-function openFill(){ S.modal='fill'; render() }
 function closeModal(){ S.modal=null; render() }
-function bgClose(e){ if(e.target.classList.contains('overlay')) closeModal() }
 
-function doCopy(val,btnId){
-  const raw = val.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
-  const btn = document.getElementById(btnId);
-  navigator.clipboard.writeText(raw).then(()=>flash(btn)).catch(()=>{
-    const t=document.createElement('textarea');
-    t.value=raw; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); flash(btn);
+function startAutoFill(){
+  const c=selC(), p=selP(), v=selV();
+  if(!c||!p||!v) return;
+  const script = buildFillScript(c, p, v);
+  // Copy script to clipboard
+  copyText(script).then(()=>{
+    S.modal='autofill';
+    render();
+  }).catch(()=>{
+    S.modal='autofill';
+    render();
   });
 }
-function flash(btn){ if(!btn)return; btn.textContent='Copied!'; btn.classList.add('ok'); setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('ok')},1500) }
 
+function reCopy(){
+  const c=selC(), p=selP(), v=selV();
+  if(!c||!p||!v) return;
+  const script = buildFillScript(c, p, v);
+  const btn = document.getElementById('recopy-btn');
+  copyText(script).then(()=>{
+    if(btn){ btn.textContent='✅ Copied!'; setTimeout(()=>{ btn.textContent='📋 Copy Script Again'; },2000); }
+  });
+}
+
+function copyText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((res,rej)=>{
+    const t=document.createElement('textarea');
+    t.value=text; t.style.position='fixed'; t.style.opacity='0';
+    document.body.appendChild(t); t.focus(); t.select();
+    try{ document.execCommand('copy')?res():rej(); }catch(e){ rej(e); }
+    document.body.removeChild(t);
+  });
+}
+
+// People CRUD
 function addPerson(){ S.draft={}; S.draftVehicles=[]; S.modal='person'; render() }
-function editPerson(id){ const p=people.find(x=>x.id===id); S.draft={...p}; S.draftVehicles=(p.vehicles||[]).map(v=>({...v})); S.modal='person'; render() }
+function editPerson(id){
+  const p=people.find(x=>x.id===id);
+  S.draft={...p}; S.draftVehicles=(p.vehicles||[]).map(v=>({...v}));
+  S.modal='person'; render();
+}
 function savePerson(){
   const d=S.draft;
-  if(!d.name||!d.apt){ alert('Name and Apartment are required.'); return }
-  const person={id:d.id||uid(),name:d.name,apt:d.apt,email:d.email||'',phone:d.phone||'',vehicles:S.draftVehicles};
+  if(!d.name){ alert('Name is required.'); return }
+  const person={id:d.id||uid(),name:d.name,email:d.email||'',phone:d.phone||'',vehicles:S.draftVehicles};
   const idx=people.findIndex(p=>p.id===person.id);
   if(idx>=0) people[idx]=person; else people.push(person);
-  save(); S.modal=null; render();
+  saveAll(); S.modal=null; render();
 }
 function delPerson(id){
-  if(!confirm('Delete this person and all their vehicles?')) return;
+  if(!confirm('Delete this person and their vehicles?')) return;
   people=people.filter(p=>p.id!==id);
   if(S.sel.pid===id){S.sel.pid=null;S.sel.vid=null}
-  save(); S.modal=null; render();
+  saveAll(); S.modal=null; render();
 }
 
-function addVeh(){ S.draftVeh={state:'CA'}; S.vehIdx=-1; S.modal='vehicle'; render() }
+// Vehicle CRUD (inside person draft)
+function addVeh(){ S.draftVeh={state:'TX'}; S.vehIdx=-1; S.modal='vehicle'; render() }
 function editVeh(i){ S.draftVeh={...S.draftVehicles[i]}; S.vehIdx=i; S.modal='vehicle'; render() }
 function cancelVeh(){ S.modal='person'; render() }
 function saveVeh(){
   const v=S.draftVeh;
   if(!v.make||!v.plate){ alert('Make and License Plate are required.'); return }
   v.id=v.id||uid();
-  if(!v.state) v.state='CA';
+  if(!v.state) v.state='TX';
   if(S.vehIdx===-1) S.draftVehicles.push(v);
   else S.draftVehicles[S.vehIdx]=v;
   S.modal='person'; render();
@@ -460,15 +593,16 @@ function delVeh(i){
   S.modal='person'; render();
 }
 
+// Complex CRUD
 function editComplex(id){ const c=complexes.find(x=>x.id===id); S.draft={...c}; S.modal='complex'; render() }
 function saveComplex(){
   const d=S.draft; if(!d.name) return;
   const idx=complexes.findIndex(c=>c.id===d.id);
   if(idx>=0) complexes[idx]={...d};
-  save(); S.modal=null; render();
+  saveAll(); S.modal=null; render();
 }
 
-// ── Icons (inline SVG) ────────────────────────────────────────────────────────
+// ── Icons ──────────────────────────────────────────────────────────────────────
 function iCar(){ return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>`}
 function iPeople(){ return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>`}
 function iBuilding(){ return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 11v10h6v-5h2v5h6V11L8 6l-7 5zm12 8h-2v-5H7v5H3v-6.5l5-3.5 5 3.5V19zm2-14V3h6v18h-6v-8h-2v-1.5l2-1.5zM17 7h2V5h-2v2zm0 4h2V9h-2v2zm0 4h2v-2h-2v2z"/></svg>`}
@@ -476,7 +610,7 @@ function iCheck(){ return`<svg width="20" height="20" viewBox="0 0 20 20" fill="
 function iChev(){ return`<svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
 function iPlus(){ return`<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`}
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Boot ───────────────────────────────────────────────────────────────────────
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 render();
 </script>
