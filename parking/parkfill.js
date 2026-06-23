@@ -223,6 +223,30 @@ function fillScript(d) {
 
   var totalHit = 0;
 
+  // Improved findBtn: collapses whitespace, matches prefix not just exact
+  function findBtn(re) {
+    return Array.from(document.querySelectorAll(
+      'button,[role="button"],input[type="button"],input[type="submit"]'
+    )).find(function(el) {
+      var txt = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+                .replace(/\s+/g,' ').trim();
+      return re.test(txt);
+    });
+  }
+
+  // Primary action button: the last visible non-back button on the page
+  function primaryBtn() {
+    var candidates = Array.from(document.querySelectorAll('button,input[type="submit"]'))
+      .filter(function(el) {
+        var txt = (el.textContent || el.value || '').toLowerCase().trim();
+        return el.offsetParent !== null          // visible
+            && !/back|cancel|close|skip/i.test(txt);
+      });
+    return candidates[candidates.length - 1] || null;
+  }
+
+  var totalHit = 0;
+
   // Phase 1 — click "Visitor Parking" (skip if form already visible)
   var p1 = 10;
   function phase1() {
@@ -232,11 +256,11 @@ function fillScript(d) {
     if (--p1 > 0) { setTimeout(phase1, 300); } else { phase3(); }
   }
 
-  // Phase 2 — click "Next" only if form NOT yet visible
+  // Phase 2 — click navigation Next only if form NOT yet visible
   var p2 = 10;
   function phase2() {
     if (formVisible()) { phase3(); return; }
-    var btn = findBtn(/^next$/i) || findBtn(/^continue$/i) || findBtn(/^proceed$/i);
+    var btn = findBtn(/next/i) || findBtn(/continue/i) || findBtn(/proceed/i) || primaryBtn();
     if (btn) { btn.click(); setTimeout(phase3, 600); return; }
     if (--p2 > 0) { setTimeout(phase2, 300); } else { phase3(); }
   }
@@ -246,17 +270,16 @@ function fillScript(d) {
   function phase3() { setTimeout(phase3fill, 400); }
   function phase3fill() {
     var hit = fillAll();
-    if (hit > 0) { totalHit += hit; setTimeout(phase4, 600); return; }
+    if (hit > 0) { totalHit += hit; setTimeout(phase4, 700); return; }
     if (--p3 > 0) { setTimeout(phase3fill, 300); } else { done(0); }
   }
 
   // Phase 4 — click "Next" to proceed to the email step
   var p4 = 15;
   function phase4() {
-    var btn = findBtn(/^next$/i) || findBtn(/^continue$/i) || findBtn(/^proceed$/i);
-    if (btn) { btn.click(); setTimeout(phase5, 800); return; }
-    // Email already visible on same page — go straight to phase 5
-    if (emailInput()) { phase5(); return; }
+    if (emailInput()) { phase5(); return; }   // email already on same page
+    var btn = findBtn(/next/i) || findBtn(/continue/i) || findBtn(/proceed/i) || primaryBtn();
+    if (btn) { btn.click(); setTimeout(phase5, 900); return; }
     if (--p4 > 0) { setTimeout(phase4, 300); } else { done(totalHit); }
   }
 
@@ -266,7 +289,7 @@ function fillScript(d) {
     var el = emailInput();
     if (el) {
       if (d.email) nv(el, d.email);
-      setTimeout(phase6, 500);
+      setTimeout(phase6, 600);
       return;
     }
     if (!d.email) { done(totalHit); return; }
@@ -280,11 +303,12 @@ function fillScript(d) {
   }
 
   // Phase 6 — click "Send" / submit
-  var p6 = 10;
+  var p6 = 12;
   function phase6() {
-    var btn = findBtn(/^send$/i) || findBtn(/^submit$/i)
-           || findBtn(/^register/i) || findBtn(/^confirm/i) || findBtn(/^finish/i);
-    if (btn) { btn.click(); setTimeout(function(){ done(totalHit); }, 500); return; }
+    var btn = findBtn(/send/i) || findBtn(/submit/i) || findBtn(/register/i)
+           || findBtn(/confirm/i) || findBtn(/finish/i) || findBtn(/get.?pass/i)
+           || findBtn(/done/i) || primaryBtn();
+    if (btn) { btn.click(); setTimeout(function(){ done(totalHit); }, 600); return; }
     if (--p6 > 0) { setTimeout(phase6, 300); } else { done(totalHit); }
   }
 
