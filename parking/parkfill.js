@@ -7,6 +7,10 @@
 //   4. Open Safari → go to sameenahmedashraf.github.io/parking/parkfill.js
 //   5. Select All → Copy → switch back to Scriptable → Paste → tap Done
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function main() {
   const raw = Pasteboard.paste();
   let d;
@@ -25,22 +29,60 @@ async function main() {
   const wv = new WebView();
   await wv.loadURL(d.url);
 
-  const result = await wv.evaluateJavaScript(fillScript(d), true);
+  // Present the WebView immediately so it is on-screen.
+  // execCommand('insertText') requires an active editing context,
+  // which only exists when the WebView is visible.
+  const closed = wv.present(false); // do NOT await yet — script keeps running
 
-  if (!result || result.hit === 0) {
-    const a = new Alert();
-    a.title = "ParkFill — Form Not Found";
-    a.message = (result && result.fields && result.fields.length > 0
-      ? "Found inputs but couldn't match them:\n" + result.fields.join(', ') + "\n\n"
-      : "No form inputs found.\n\n") +
-      "URL: " + (result ? result.url : d.url) + "\n\nMake sure the complex URL in the app points to the actual registration form page.";
-    a.addAction("Open anyway");
-    a.addCancelAction("Cancel");
-    const choice = await a.present();
-    if (choice === 0) await wv.present(false);
-  } else {
-    await wv.present(false);
+  // Give the page time to render inside the visible WebView
+  await sleep(1500);
+
+  // Click "Visitor Parking" if the page has one (landing page flow)
+  const clicked = await wv.evaluateJavaScript(`
+    (function() {
+      var all = Array.from(document.querySelectorAll(
+        'button,[role="button"],a,input[type="button"],input[type="submit"]'
+      ));
+      var btn = all.find(function(el) {
+        var txt = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+                    .replace(/\\s+/g,' ').trim();
+        return /visitor.?parking/i.test(txt);
+      });
+      if (btn) { btn.click(); return true; }
+      return false;
+    })()
+  `);
+
+  // If we navigated to a new page, wait for it to render
+  if (clicked) await sleep(2000);
+
+  // Try to fill, retrying a few times in case React is still mounting
+  let hit = 0;
+  for (let i = 0; i < 8; i++) {
+    hit = await wv.evaluateJavaScript(fillScript(d));
+    if (hit > 0) break;
+    await sleep(600);
   }
+
+  // If still nothing, show what fields were detected to help debug
+  if (hit === 0) {
+    const found = await wv.evaluateJavaScript(`
+      (function() {
+        var els = Array.from(document.querySelectorAll('input,select,textarea'));
+        return els.map(function(el) {
+          return el.name || el.id || el.placeholder || el.getAttribute('aria-label') || el.type || '?';
+        }).filter(Boolean).slice(0, 20).join(', ');
+      })()
+    `);
+    const a = new Alert();
+    a.title = "ParkFill — Nothing Filled";
+    a.message = "Fields detected: " + (found || "none") + "\n\nURL: " + d.url;
+    a.addAction("OK");
+    await a.present();
+  }
+
+  // Wait for the user to close the WebView
+  await closed;
 }
 
 function fillScript(d) {
@@ -57,18 +99,13 @@ function fillScript(d) {
     if (!s) return false;
     el.focus();
     el.select();
-
-    // Best path: execCommand goes through WebKit's native editing pipeline
-    // which React hooks into directly — most reliable for controlled inputs
+    // execCommand goes through WebKit's native text pipeline — React hooks into this
     var did = false;
     try {
-      if (document.execCommand('selectAll', false, null)) {
-        did = document.execCommand('insertText', false, s);
-      }
+      did = document.execCommand('selectAll', false, null) &&
+            document.execCommand('insertText', false, s);
     } catch(e) {}
-
     if (!did) {
-      // Fallback: clear first so React sees a value change, then set
       var desc;
       try {
         desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')
@@ -81,11 +118,8 @@ function fillScript(d) {
       el.value = s;
       try {
         el.dispatchEvent(new InputEvent('input', {bubbles:true, cancelable:true, inputType:'insertText', data:s}));
-      } catch(e) {
-        el.dispatchEvent(new Event('input', {bubbles:true}));
-      }
+      } catch(e) { el.dispatchEvent(new Event('input', {bubbles:true})); }
     }
-
     el.dispatchEvent(new Event('change', {bubbles:true}));
     el.dispatchEvent(new Event('blur', {bubbles:true}));
     return true;
@@ -112,16 +146,6 @@ function fillScript(d) {
     return false;
   }
 
-  function findBtn(re) {
-    return Array.from(document.querySelectorAll(
-      'button,[role="button"],a,input[type="button"],input[type="submit"]'
-    )).find(function(el) {
-      var txt = (el.textContent || el.value || el.getAttribute('aria-label') || '').trim();
-      return re.test(txt);
-    });
-  }
-
-  // Find the input associated with a label, handling wrapper divs
   function labelEl(lbl) {
     if (lbl.control) return lbl.control;
     if (lbl.htmlFor) return document.getElementById(lbl.htmlFor);
@@ -130,126 +154,64 @@ function fillScript(d) {
     var sib = lbl.nextElementSibling;
     if (sib) {
       if (/INPUT|SELECT|TEXTAREA/.test(sib.tagName)) return sib;
-      var sibInner = sib.querySelector('input,select,textarea');
-      if (sibInner) return sibInner;
+      var si = sib.querySelector('input,select,textarea');
+      if (si) return si;
     }
-    if (lbl.parentElement) return lbl.parentElement.querySelector('input,select,textarea');
-    return null;
+    return lbl.parentElement && lbl.parentElement.querySelector('input,select,textarea');
   }
 
-  // Returns true if the registration form inputs are already on screen
-  function formVisible() {
-    var labels = Array.from(document.querySelectorAll('label'));
-    return labels.some(function(l){ return /plate|make|model|apartment|unit/i.test(l.textContent); })
-        || !!document.querySelector('input[placeholder*="plate" i],input[placeholder*="make" i],input[placeholder*="apt" i]');
+  var hit = 0;
+
+  if (d.apt) hit += q([
+    'input[name="unit"]','input[name="unit_number"]','input[name="apartment"]',
+    'input[name="apt"]','input[name="unitNumber"]','input[name="apartment_number"]',
+    'input[id*="unit" i]','input[id*="apt" i]','input[id*="apartment" i]',
+    'input[placeholder*="unit" i]','input[placeholder*="apt" i]',
+    'input[placeholder*="apartment" i]','[aria-label*="unit" i]','[aria-label*="apt" i]'
+  ], d.apt) ? 1 : 0;
+
+  if (d.make)  hit += q(['input[name="make"]','input[name="vehicle_make"]','input[id*="make" i]','input[placeholder*="make" i]','[aria-label*="make" i]'], d.make) ? 1 : 0;
+  if (d.model) hit += q(['input[name="model"]','input[name="vehicle_model"]','input[id*="model" i]','input[placeholder*="model" i]','[aria-label*="model" i]'], d.model) ? 1 : 0;
+  if (d.year)  hit += q(['input[name="year"]','input[name="vehicle_year"]','input[id*="year" i]','input[placeholder*="year" i]','[aria-label*="year" i]'], d.year) ? 1 : 0;
+  if (d.color) hit += q(['input[name="color"]','input[name="vehicle_color"]','input[id*="color" i]','input[placeholder*="color" i]','[aria-label*="color" i]'], d.color) ? 1 : 0;
+
+  if (d.plate) {
+    hit += q([
+      'input[name="plate"]','input[name="license_plate"]','input[name="license"]',
+      'input[name="licensePlate"]','input[id*="plate" i]','input[id*="license" i]',
+      'input[placeholder*="plate" i]','input[placeholder*="license" i]','[aria-label*="plate" i]'
+    ], d.plate) ? 1 : 0;
+    q([
+      'input[name="confirm_plate"]','input[name="confirm_license_plate"]',
+      'input[name="confirmPlate"]','input[id*="confirm" i][id*="plate" i]',
+      'input[placeholder*="confirm" i]'
+    ], d.plate);
   }
 
-  function fillAll() {
-    var hit = 0;
-
-    if (d.apt) hit += q([
-      'input[name="unit"]','input[name="unit_number"]','input[name="apartment"]',
-      'input[name="apt"]','input[name="unitNumber"]','input[name="apt_number"]',
-      'input[name="apartment_number"]',
-      'input[id*="unit" i]','input[id*="apt" i]','input[id*="apartment" i]',
-      'input[placeholder*="unit" i]','input[placeholder*="apt" i]',
-      'input[placeholder*="apartment" i]','input[placeholder*="suite" i]',
-      '[aria-label*="unit" i]','[aria-label*="apt" i]'
-    ], d.apt) ? 1 : 0;
-
-    if (d.make)  hit += q(['input[name="make"]','input[name="vehicle_make"]','input[id*="make" i]','input[placeholder*="make" i]','[aria-label*="make" i]'], d.make) ? 1 : 0;
-    if (d.model) hit += q(['input[name="model"]','input[name="vehicle_model"]','input[id*="model" i]','input[placeholder*="model" i]','[aria-label*="model" i]'], d.model) ? 1 : 0;
-    if (d.year)  hit += q(['input[name="year"]','input[name="vehicle_year"]','input[id*="year" i]','input[placeholder*="year" i]','[aria-label*="year" i]'], d.year) ? 1 : 0;
-    if (d.color) hit += q(['input[name="color"]','input[name="vehicle_color"]','input[id*="color" i]','input[placeholder*="color" i]','[aria-label*="color" i]'], d.color) ? 1 : 0;
-
-    // Fill both plate and confirm-plate fields
-    if (d.plate) {
-      hit += q([
-        'input[name="plate"]','input[name="license_plate"]','input[name="license"]',
-        'input[name="licensePlate"]','input[name="plateNumber"]',
-        'input[id*="plate" i]','input[id*="license" i]',
-        'input[placeholder*="plate" i]','input[placeholder*="license" i]',
-        '[aria-label*="plate" i]','[aria-label*="license" i]'
-      ], d.plate) ? 1 : 0;
-      // Confirm plate fields
-      q([
-        'input[name="confirm_plate"]','input[name="confirm_license_plate"]',
-        'input[name="confirmPlate"]','input[name="plate_confirm"]',
-        'input[id*="confirm" i][id*="plate" i]','input[id*="confirm" i][id*="license" i]',
-        'input[placeholder*="confirm" i]'
-      ], d.plate);
-    }
-
-    if (d.state) {
-      q(['select[name*="state" i]','select[id*="state" i]','select[aria-label*="state" i]'], d.state, true);
-      q(['input[name*="state" i]','input[id*="state" i]'], d.state);
-    }
-
-    if (d.email) hit += q([
-      'input[type="email"]',
-      'input[name="email"]','input[name="guest_email"]','input[name="visitor_email"]',
-      'input[id*="email" i]','input[placeholder*="email" i]','[aria-label*="email" i]'
-    ], d.email) ? 1 : 0;
-
-    if (d.code) q(['input[name*="property_code" i]','input[name*="code" i]','input[id*="code" i]','input[placeholder*="code" i]'], d.code);
-
-    // Label-text fallback — handles any markup structure
-    document.querySelectorAll('label').forEach(function(lbl) {
-      var t  = lbl.textContent.toLowerCase().trim();
-      var el = labelEl(lbl);
-      if (!el) return;
-      var tag = el.tagName;
-      if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
-      if      (/unit|apt|apartment|suite/.test(t) && d.apt)    { if(nv(el, d.apt))   hit++; }
-      else if (/\bmake\b/.test(t) && d.make)                    { if(nv(el, d.make))  hit++; }
-      else if (/\bmodel\b/.test(t) && d.model)                  { if(nv(el, d.model)) hit++; }
-      else if (/\byear\b/.test(t) && d.year)                    { if(nv(el, d.year))  hit++; }
-      else if (/colou?r/.test(t) && d.color)                    { if(nv(el, d.color)) hit++; }
-      else if (/plate|licen/.test(t) && d.plate)                { if(nv(el, d.plate)) hit++; }
-      else if (/e.?mail/.test(t) && d.email)                    { if(nv(el, d.email)) hit++; }
-      else if (/state|province/.test(t) && tag === 'SELECT' && d.state) ns(el, d.state);
-    });
-
-    return hit;
+  if (d.state) {
+    q(['select[name*="state" i]','select[id*="state" i]','select[aria-label*="state" i]'], d.state, true);
+    q(['input[name*="state" i]','input[id*="state" i]'], d.state);
   }
 
-  function done(hit) {
-    var inputs = Array.from(document.querySelectorAll('input,select,textarea'));
-    var fields = inputs.map(function(el) {
-      return (el.name || el.id || el.getAttribute('aria-label') || el.placeholder || '').slice(0,25);
-    }).filter(Boolean).slice(0,12);
-    completion({hit: hit, url: location.href, fields: fields});
-  }
+  if (d.code) q(['input[name*="property_code" i]','input[name*="code" i]','input[id*="code" i]'], d.code);
 
-  // Phase 1 — click "Visitor Parking" (skip if form already visible)
-  var p1 = 10;
-  function phase1() {
-    if (formVisible()) { phase3(); return; }
-    var btn = findBtn(/visitor.?parking/i);
-    if (btn) { btn.click(); setTimeout(phase2, 600); return; }
-    if (--p1 > 0) { setTimeout(phase1, 300); } else { phase3(); }
-  }
+  // Label-text fallback
+  document.querySelectorAll('label').forEach(function(lbl) {
+    var t = lbl.textContent.toLowerCase().trim(), el = labelEl(lbl);
+    if (!el) return;
+    var tag = el.tagName;
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
+    if      (/unit|apt|apartment|suite/.test(t) && d.apt)             { if (nv(el, d.apt))   hit++; }
+    else if (/\bmake\b/.test(t) && d.make)                             { if (nv(el, d.make))  hit++; }
+    else if (/\bmodel\b/.test(t) && d.model)                           { if (nv(el, d.model)) hit++; }
+    else if (/\byear\b/.test(t) && d.year)                             { if (nv(el, d.year))  hit++; }
+    else if (/colou?r/.test(t) && d.color)                             { if (nv(el, d.color)) hit++; }
+    else if (/plate|licen/.test(t) && d.plate)                         { if (nv(el, d.plate)) hit++; }
+    else if (/state|province/.test(t) && tag === 'SELECT' && d.state)  ns(el, d.state);
+  });
 
-  // Phase 2 — click "Next" only if form NOT yet visible
-  var p2 = 10;
-  function phase2() {
-    if (formVisible()) { phase3(); return; }
-    var btn = findBtn(/^next$/i) || findBtn(/^continue$/i) || findBtn(/^proceed$/i);
-    if (btn) { btn.click(); setTimeout(phase3, 600); return; }
-    if (--p2 > 0) { setTimeout(phase2, 300); } else { phase3(); }
-  }
-
-  // Phase 3 — fill the form (brief pause first so React finishes mounting)
-  var p3 = 15;
-  function phase3() { setTimeout(phase3fill, 400); }
-  function phase3fill() {
-    var hit = fillAll();
-    if (hit > 0) { done(hit); return; }
-    if (--p3 > 0) { setTimeout(phase3fill, 300); } else { done(0); }
-  }
-
-  phase1();
-})();`;
+  return hit;
+})()`;
 }
 
 main();
