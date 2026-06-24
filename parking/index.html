@@ -126,6 +126,7 @@ function buildClipboardData(cx, car){
     color: car.color || '',
     plate: car.plate || '',
     state: car.state || '',
+    email: car.email || '',
   });
 }
 
@@ -215,7 +216,7 @@ function viewCars(){
       <div class="rb">
         <div class="rt">${esc(c.label||[c.year,c.make,c.model].filter(Boolean).join(' '))}</div>
         <div class="rs">${esc(c.plate)}${c.state?' · '+esc(c.state):''}${c.year?' · '+esc(c.year):''}</div>
-        ${c.color?`<div class="rc">${esc(c.color)}</div>`:''}
+        ${(c.color||c.email)?`<div class="rc">${[c.color,c.email].filter(Boolean).map(esc).join(' · ')}</div>`:''}
       </div>
       <span class="chv">${iChev()}</span>
     </button>`).join('')}
@@ -310,9 +311,10 @@ function modalCar(){
         <span class="ttl">${isNew?'Add Visitor Car':'Edit Car'}</span>
         <button class="nav-btn" style="font-weight:600" onclick="saveCar()">Save</button>
       </div>
-      <div class="sec-hdr">Owner</div>
+      <div class="sec-hdr">Driver</div>
       <div class="card">
         <div class="ff"><label>Name / Label</label><input placeholder='e.g. "Mom" or "John"' value="${esc(d.label||'')}" oninput="S.draftCar.label=this.value"></div>
+        <div class="ff"><label>Email</label><input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="for confirmation email" value="${esc(d.email||'')}" oninput="S.draftCar.email=this.value"></div>
       </div>
       <div class="sec-hdr" style="margin-top:20px">Car</div>
       <div class="card">
