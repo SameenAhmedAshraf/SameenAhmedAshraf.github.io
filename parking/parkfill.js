@@ -1,6 +1,6 @@
-// ParkFill — Parking Registration Auto-Fill  (v14)
+// ParkFill — Parking Registration Auto-Fill  (v15)
 // ──────────────────────────────────────────────────
-// Uses register2park.com's exact element IDs:
+// register2park.com element IDs:
 //   registrationTypeVisitor, vehicleApt, vehicleMake, vehicleModel,
 //   vehicleLicensePlate, vehicleLicensePlateConfirm, vehicleInformation,
 //   email-confirmation, emailConfirmationEmailView, email-confirmation-send-view
@@ -20,20 +20,22 @@ async function main() {
     return;
   }
 
+  // Trim stray spaces (e.g. "Highlander ") — the server can reject them
+  for (const k in d) if (typeof d[k] === "string") d[k] = d[k].trim();
+
   const wv = new WebView();
   await wv.loadURL(d.url);
 
-  // Single injection; the page script walks through every step and calls
-  // completion() when finished. The WebView is presented after, showing
-  // the final confirmation page.
   let result = "no result";
   try {
     result = await wv.evaluateJavaScript(autoScript(d), true);
   } catch (e) {
-    result = "Script error: " + e;
+    result = "FAIL: script error: " + e;
   }
 
-  if (String(result).indexOf("FAIL") === 0 || String(result).indexOf("Script error") === 0) {
+  // Anything other than full success: tell the user what happened.
+  // The email watcher keeps running inside the page either way.
+  if (String(result).indexOf("OK") !== 0) {
     const a = new Alert();
     a.title = "ParkFill";
     a.message = String(result);
@@ -58,6 +60,7 @@ function autoScript(d) {
   }
 
   function el(id) { return document.getElementById(id); }
+  function vis(e) { return !!(e && e.offsetParent !== null); }
 
   function fill(id, v) {
     var e = el(id);
@@ -65,6 +68,7 @@ function autoScript(d) {
     e.value = String(v);
     e.dispatchEvent(new Event("input",  { bubbles: true }));
     e.dispatchEvent(new Event("change", { bubbles: true }));
+    e.dispatchEvent(new Event("blur",   { bubbles: true }));
     return true;
   }
 
@@ -75,27 +79,71 @@ function autoScript(d) {
     return true;
   }
 
-  // Poll until element with id exists and is visible, then cb(); else fail()
   function waitFor(id, tries, ms, cb, fail) {
     (function poll(n) {
-      var e = el(id);
-      if (e && e.offsetParent !== null) return cb();
+      if (vis(el(id))) return cb();
       if (n <= 0) return fail();
       setTimeout(function () { poll(n - 1); }, ms);
     })(tries);
   }
 
-  // Step 1 — click "Visitor Parking"
+  // Find a visible error dialog (AJAX error etc.) and return it
+  function errorModal() {
+    var cands = document.querySelectorAll('.modal, .sweet-alert, [role="dialog"], .alert-danger');
+    for (var i = 0; i < cands.length; i++) {
+      var m = cands[i];
+      if (!vis(m)) continue;
+      if (/ajax|error|wrong|failed/i.test(m.textContent || "")) return m;
+    }
+    return null;
+  }
+
+  function dismissModal(m) {
+    var btns = m.querySelectorAll('button, a.btn, input[type="button"]');
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].textContent || btns[i].value || "").trim();
+      if (/^(ok|okay|close|try again|dismiss|confirm|×)$/i.test(t)) { btns[i].click(); return; }
+    }
+    if (btns.length) btns[0].click();
+    try { if (window.jQuery) window.jQuery(m).modal("hide"); } catch (e) {}
+  }
+
+  // ── Email watcher ─────────────────────────────────────────────────────────
+  // Runs in the page independently for 3 minutes: the moment the blue
+  // E-Mail Confirmation button exists it clicks it, fills the email and
+  // presses Send — even if Next had to be tapped manually.
+  var emailClicked = false, emailSent = false;
+  var watcher = null;
+  function startEmailWatcher() {
+    if (!D.email || watcher) return;
+    var ticks = 0;
+    watcher = setInterval(function () {
+      if (++ticks > 360) { clearInterval(watcher); return; }
+      if (emailSent) { clearInterval(watcher); return; }
+      if (!emailClicked && vis(el("email-confirmation"))) {
+        emailClicked = true;
+        click("email-confirmation");
+        return;
+      }
+      if (emailClicked && vis(el("emailConfirmationEmailView"))) {
+        fill("emailConfirmationEmailView", D.email);
+        setTimeout(function () {
+          if (!emailSent) { emailSent = true; click("email-confirmation-send-view"); }
+        }, 400);
+      }
+    }, 500);
+  }
+
+  // ── Step 1: Visitor Parking ───────────────────────────────────────────────
   waitFor("registrationTypeVisitor", 25, 400, function () {
     click("registrationTypeVisitor");
     stepForm();
   }, function () {
-    // Button not there — maybe the form is already showing
     if (el("vehicleApt")) stepForm();
-    else finish("FAIL: Visitor Parking button not found. Check the complex URL points to your property page. URL: " + location.href);
+    else finish("FAIL: Visitor Parking button not found. Check the complex URL. URL: " + location.href);
   });
 
-  // Step 2 — fill the vehicle form and press Next
+  // ── Step 2: fill form, submit with retry on AJAX error ───────────────────
   function stepForm() {
     waitFor("vehicleApt", 25, 400, function () {
       fill("vehicleApt",                 D.apt);
@@ -103,37 +151,51 @@ function autoScript(d) {
       fill("vehicleModel",               D.model);
       fill("vehicleLicensePlate",        D.plate);
       fill("vehicleLicensePlateConfirm", D.plate);
-      setTimeout(function () {
-        click("vehicleInformation");   // the red Next button
-        stepEmail();
-      }, 600);
+      startEmailWatcher();
+      // Give the site's own validation/JS a moment before submitting
+      setTimeout(function () { submitNext(3); }, 1200);
     }, function () {
       finish("FAIL: vehicle form did not appear after clicking Visitor Parking.");
     });
   }
 
-  // Step 3 — E-Mail Confirmation → fill email → Send
-  function stepEmail() {
-    if (!D.email) { finish("OK: registered (no email saved for this car)"); return; }
-    // Registration takes a moment to process; wait up to ~20s for the button
-    waitFor("email-confirmation", 40, 500, function () {
-      click("email-confirmation");
-      waitFor("emailConfirmationEmailView", 20, 400, function () {
-        fill("emailConfirmationEmailView", D.email);
-        setTimeout(function () {
-          click("email-confirmation-send-view");   // the green Send button
-          setTimeout(function () { finish("OK: registered and confirmation email sent"); }, 900);
-        }, 400);
-      }, function () {
-        finish("OK: registered, but the email box did not open — tap E-Mail Confirmation manually.");
-      });
-    }, function () {
-      finish("OK: submitted, but the E-Mail Confirmation button never appeared — check the page.");
-    });
+  function submitNext(retries) {
+    click("vehicleInformation");   // the red Next button
+    watchOutcome(retries, 24);     // 24 × 500ms = 12s per attempt
   }
 
-  // Watchdog so the script can never hang forever
-  setTimeout(function () { finish("FAIL: timed out after 60s. URL: " + location.href); }, 60000);
+  function watchOutcome(retries, ticksLeft) {
+    if (emailSent || vis(el("email-confirmation"))) { stepEmailFinish(); return; }
+    var m = errorModal();
+    if (m) {
+      if (retries > 0) {
+        dismissModal(m);
+        setTimeout(function () { submitNext(retries - 1); }, 2000);
+      } else {
+        finish("NOTE: the site kept returning an error on submit. The form is filled — tap Next yourself; the email will still send automatically.");
+      }
+      return;
+    }
+    if (ticksLeft <= 0) {
+      finish("NOTE: submitted but no confirmation appeared yet. Page is open — check it; the email will still send automatically if it goes through.");
+      return;
+    }
+    setTimeout(function () { watchOutcome(retries, ticksLeft - 1); }, 500);
+  }
+
+  // ── Step 3: wait for the watcher to send the email ────────────────────────
+  function stepEmailFinish() {
+    if (!D.email) { finish("OK: registered (no email saved for this car)"); return; }
+    var waited = 0;
+    (function chk() {
+      if (emailSent) { setTimeout(function () { finish("OK: registered and confirmation email sent"); }, 800); return; }
+      if ((waited += 500) > 20000) { finish("OK: registered — email box didn't finish, check the page."); return; }
+      setTimeout(chk, 500);
+    })();
+  }
+
+  // Watchdog: never hang forever
+  setTimeout(function () { finish("NOTE: timed out — page is open, please check it."); }, 90000);
 })();`;
 }
 
