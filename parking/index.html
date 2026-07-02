@@ -5,100 +5,194 @@ layout: none
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Park Register">
+<meta name="apple-mobile-web-app-title" content="Park OS">
+<meta name="theme-color" content="#07080f">
 <link rel="manifest" href="manifest.json">
-<title>Park Register</title>
+<title>PARK_OS</title>
 <style>
 :root{
-  --blue:#007AFF;--red:#FF3B30;--green:#34C759;--orange:#FF9500;
-  --bg:#F2F2F7;--card:#fff;--label:#000;--secondary:rgba(60,60,67,.6);
-  --tertiary:rgba(60,60,67,.3);--sep:rgba(60,60,67,.29);--tab-bg:rgba(249,249,249,.94);
-  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
-}
-@media(prefers-color-scheme:dark){
-  :root{--bg:#000;--card:#1C1C1E;--label:#fff;--secondary:rgba(235,235,245,.6);
-    --tertiary:rgba(235,235,245,.3);--sep:rgba(84,84,88,.65);--tab-bg:rgba(28,28,30,.94)}
+  --bg:#07080f; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.08);
+  --line:rgba(255,255,255,.1); --line2:rgba(255,255,255,.18);
+  --txt:#e7ecf5; --dim:rgba(231,236,245,.55); --faint:rgba(231,236,245,.3);
+  --vio:#8b5cf6; --cyan:#22d3ee; --lime:#a3e635; --pink:#fb7185; --amber:#fbbf24;
+  --grad:linear-gradient(135deg,#8b5cf6 0%,#06b6d4 100%);
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--label)}
-#app{display:flex;flex-direction:column;height:100%}
-.scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb)+60px)}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(600px 400px at 85% -5%, rgba(139,92,246,.22), transparent 60%),
+    radial-gradient(500px 380px at -10% 30%, rgba(34,211,238,.13), transparent 60%),
+    radial-gradient(500px 500px at 50% 110%, rgba(163,230,53,.07), transparent 60%)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:28px 28px}
+#app{display:flex;flex-direction:column;height:100%;position:relative;z-index:1}
+.scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb) + 96px)}
 
-.tabs{background:var(--tab-bg);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--sep);padding:6px 0 calc(var(--sb)+2px);display:flex;flex-shrink:0}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--secondary);padding:2px 0;font-family:inherit}
-.tab.on{color:var(--blue)}
-.tab svg{width:24px;height:24px}
-.tab span{font-size:10px;font-weight:500}
+/* ── terminal header ── */
+.hdr{padding:calc(var(--st) + 22px) 20px 4px}
+.hdr .brand{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.02em;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  display:inline-flex;align-items:center}
+.hdr .brand .cur{display:inline-block;width:12px;height:24px;margin-left:6px;background:var(--cyan);
+  -webkit-text-fill-color:initial;animation:blink 1.1s steps(1) infinite;border-radius:2px}
+.hdr .sub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:6px}
+.hdr .sub b{color:var(--lime);font-weight:600}
+@keyframes blink{50%{opacity:0}}
 
-.nav{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--st)+16px) 16px 8px}
-.nav-title{font-size:34px;font-weight:700}
-.nav-btn{background:none;border:none;color:var(--blue);font-size:17px;padding:8px;cursor:pointer;font-family:inherit;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
-.nav-sub{font-size:15px;color:var(--secondary);padding:0 16px 12px}
+/* ── stat chips ── */
+.stats{display:flex;gap:8px;padding:14px 20px 0;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:11px;color:var(--dim);background:var(--panel);
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.chip b{color:var(--cyan);font-weight:700}
 
-.sec{margin:20px 0 0}
-.sec-hdr{font-size:13px;color:var(--secondary);text-transform:uppercase;letter-spacing:.04em;padding:0 16px 6px}
-.card{background:var(--card);border-radius:12px;margin:0 16px;overflow:hidden}
-.row{display:flex;align-items:center;padding:12px 16px;min-height:44px;border-bottom:.5px solid var(--sep);background:none;width:100%;text-align:left;color:var(--label);cursor:pointer;font-family:inherit}
-.row:last-child{border-bottom:none}
-.row.sel{background:rgba(0,122,255,.08)}
-.rb{flex:1;min-width:0}
-.rt{font-size:17px}
-.rs{font-size:14px;color:var(--secondary);margin-top:1px}
-.rc{font-size:13px;color:var(--tertiary);margin-top:1px}
-.chk{color:var(--blue);margin-right:10px;flex-shrink:0}
-.chv{color:var(--tertiary);flex-shrink:0;margin-left:8px}
+/* ── sections ── */
+.sec{margin:22px 0 0}
+.sec-hdr{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--faint);
+  text-transform:uppercase;padding:0 20px 10px;display:flex;align-items:center;gap:8px}
+.sec-hdr::after{content:'';flex:1;height:1px;background:var(--line);margin-right:20px}
 
-.btn{display:block;width:calc(100% - 32px);margin:16px;padding:15px;border-radius:12px;border:none;font-size:17px;font-weight:600;cursor:pointer;background:var(--blue);color:#fff;font-family:inherit}
-.btn:disabled{opacity:.35}
-.btn.red{background:var(--red)}
-.btn.green{background:var(--green)}
+/* ── complex pills ── */
+.cxrow{display:flex;gap:10px;overflow-x:auto;padding:0 20px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cxrow::-webkit-scrollbar{display:none}
+.cx{flex-shrink:0;border:1px solid var(--line);background:var(--panel);border-radius:16px;
+  padding:12px 16px;min-width:132px;cursor:pointer;color:var(--txt);text-align:left;font-family:inherit;
+  transition:border-color .18s,box-shadow .18s,transform .12s}
+.cx:active{transform:scale(.97)}
+.cx .nm{font-size:15px;font-weight:700}
+.cx .ap{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:3px}
+.cx .ap.warn{color:var(--pink)}
+.cx.on{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(34,211,238,.25)}
+.cx.on .ap{color:var(--cyan)}
 
-.ff{display:flex;align-items:center;padding:11px 16px;border-bottom:.5px solid var(--sep);min-height:44px;gap:8px}
-.ff:last-child{border-bottom:none}
-.ff label{font-size:17px;width:110px;flex-shrink:0}
-.ff input,.ff select{flex:1;font-size:17px;border:none;outline:none;background:transparent;color:var(--label);font-family:inherit;min-width:0}
-.ff input::placeholder{color:var(--tertiary)}
-.ff select{-webkit-appearance:none}
-.ff.col{flex-direction:column;align-items:stretch;gap:6px}
-.ff.col label{width:auto}
+/* ── THE LOT (parking grid) ── */
+.lot{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px}
+.slot{position:relative;border:2px dashed rgba(251,191,36,.28);border-radius:16px;background:rgba(255,255,255,.025);
+  padding:14px;cursor:pointer;color:var(--txt);text-align:left;font-family:inherit;
+  transition:border-color .2s,box-shadow .2s,background .2s,transform .12s}
+.slot:active{transform:scale(.97)}
+.slot .num{position:absolute;top:8px;right:12px;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.slot .car{font-size:30px;line-height:1;display:block;filter:grayscale(.9);opacity:.55;
+  transition:filter .25s,opacity .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.slot .who{font-size:14px;font-weight:700;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .veh{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .plate{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;
+  color:#a5f3fc;background:#0b1524;border:1px solid #29405e;border-radius:6px;padding:3px 8px;margin-top:8px}
+.slot.parked{border:2px solid var(--lime);background:rgba(163,230,53,.07);
+  box-shadow:0 0 18px rgba(163,230,53,.18), inset 0 0 22px rgba(163,230,53,.05)}
+.slot.parked .car{filter:none;opacity:1;transform:translateX(0) rotate(0)}
+.slot.parked .carwrap .car{animation:parkin .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes parkin{0%{transform:translateX(-46px) rotate(-8deg);opacity:.4}100%{transform:translateX(0) rotate(0);opacity:1}}
+.slot.add{border-style:dashed;border-color:var(--line2);display:flex;align-items:center;justify-content:center;
+  min-height:118px;color:var(--dim);font-size:14px;font-weight:600;gap:6px}
+.slot.add span.plus{font-size:22px;color:var(--cyan)}
+.lot-empty{margin:0 20px;padding:34px 20px;border:2px dashed var(--line2);border-radius:18px;text-align:center;color:var(--dim)}
+.lot-empty .big{font-size:40px;margin-bottom:10px}
+.lot-empty p{font-size:14px;line-height:1.5}
 
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;flex-direction:column;justify-content:flex-end;animation:fi .2s ease}
-.sheet{background:var(--bg);border-radius:16px 16px 0 0;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb)+8px);animation:su .28s ease}
-.handle{width:36px;height:5px;background:var(--sep);border-radius:3px;margin:10px auto 0}
-.mnav{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 10px}
-.mnav .ttl{font-size:17px;font-weight:600}
+/* ── run button ── */
+.runwrap{padding:22px 20px 0}
+.run{width:100%;border:none;border-radius:18px;padding:17px;font-size:16px;font-weight:800;
+  font-family:var(--mono);letter-spacing:.06em;color:#04121a;background:var(--grad);cursor:pointer;
+  box-shadow:0 6px 30px rgba(34,211,238,.35);transition:transform .12s,box-shadow .2s,opacity .2s}
+.run:active{transform:scale(.98)}
+.run:disabled{opacity:.3;box-shadow:none}
+.run.armed{animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 6px 26px rgba(34,211,238,.3)}50%{box-shadow:0 6px 40px rgba(139,92,246,.55)}}
+.ready{margin:12px 20px 0;font-family:var(--mono);font-size:12px;color:var(--lime);line-height:1.6}
+.ready .dim{color:var(--dim)}
+
+/* ── launch overlay ── */
+.launch{position:fixed;inset:0;z-index:400;pointer-events:none;overflow:hidden}
+.launch .zoom{position:absolute;left:-15%;font-size:38px;animation:zoomacross 1s cubic-bezier(.45,0,.55,1) forwards}
+@keyframes zoomacross{0%{transform:translateX(0)}100%{transform:translateX(130vw)}}
+
+/* ── garage list ── */
+.glist{padding:0 20px;display:flex;flex-direction:column;gap:10px}
+.gcard{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:14px 16px;cursor:pointer;color:var(--txt);text-align:left;font-family:inherit;width:100%;
+  transition:border-color .15s,transform .12s}
+.gcard:active{transform:scale(.98)}
+.gcard .emoji{font-size:28px}
+.gcard .gb{flex:1;min-width:0}
+.gcard .gt{font-size:16px;font-weight:700}
+.gcard .gs{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcard .chev{color:var(--faint);font-family:var(--mono)}
+
+/* ── generic buttons ── */
+.btn{display:block;width:calc(100% - 40px);margin:18px 20px 0;padding:15px;border-radius:16px;border:1px solid var(--line2);
+  font-size:15px;font-weight:700;cursor:pointer;background:var(--panel2);color:var(--txt);font-family:inherit;
+  transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.grad{background:var(--grad);border:none;color:#04121a;font-family:var(--mono);letter-spacing:.04em}
+.btn.danger{color:var(--pink);border-color:rgba(251,113,133,.35)}
+
+/* ── tab bar ── */
+.tabs{position:fixed;left:16px;right:16px;bottom:calc(var(--sb) + 12px);z-index:100;display:flex;
+  background:rgba(13,15,26,.82);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  border:1px solid var(--line2);border-radius:22px;padding:8px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;cursor:pointer;
+  color:var(--faint);padding:7px 0;font-family:var(--mono);border-radius:15px;transition:color .15s,background .15s}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:9.5px;letter-spacing:.14em;font-weight:700}
+.tab.on{color:var(--cyan);background:rgba(34,211,238,.1)}
+
+/* ── sheets/modals ── */
+.overlay{position:fixed;inset:0;background:rgba(3,4,10,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  z-index:200;display:flex;flex-direction:column;justify-content:flex-end;animation:fi .18s ease}
+.sheet{background:#0c0e1a;border:1px solid var(--line2);border-bottom:none;border-radius:24px 24px 0 0;
+  max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--sb) + 14px);animation:su .3s cubic-bezier(.32,.72,.35,1)}
+.handle{width:38px;height:5px;background:var(--line2);border-radius:3px;margin:12px auto 2px}
+.mnav{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 12px}
+.mnav .ttl{font-family:var(--mono);font-size:15px;font-weight:800;letter-spacing:.06em}
+.mbtn{background:none;border:none;color:var(--cyan);font-size:16px;font-weight:600;padding:10px 12px;cursor:pointer;font-family:inherit}
 @keyframes fi{from{opacity:0}to{opacity:1}}
-@keyframes su{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes su{from{transform:translateY(70px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-.af-step{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--sep)}
-.af-step:last-child{border-bottom:none}
-.af-num{width:28px;height:28px;border-radius:14px;background:var(--blue);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.af-body{flex:1;font-size:15px;line-height:1.5}
-.af-body strong{font-weight:600}
-.af-body a{color:var(--blue);text-decoration:none;font-weight:600}
+/* ── form fields ── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin:0 20px;overflow:hidden}
+.ff{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);min-height:48px;gap:10px}
+.ff:last-child{border-bottom:none}
+.ff label{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--dim);width:96px;flex-shrink:0;text-transform:uppercase}
+.ff input{flex:1;font-size:16px;border:none;outline:none;background:transparent;color:var(--txt);font-family:inherit;min-width:0}
+.ff input::placeholder{color:var(--faint)}
+.ff.col{flex-direction:column;align-items:stretch;gap:8px}
+.ff.col label{width:auto}
+.mhint{margin:14px 20px 0;padding:13px 15px;border:1px solid rgba(34,211,238,.25);background:rgba(34,211,238,.07);
+  border-radius:14px;font-size:13px;color:var(--dim);line-height:1.6}
+.mhint b{color:var(--cyan)}
+.mhint.ok{border-color:rgba(163,230,53,.3);background:rgba(163,230,53,.07)}
+.mhint.ok b{color:var(--lime)}
 
-.info{margin:12px 16px;padding:12px;background:rgba(0,122,255,.1);border-radius:10px;font-size:14px;color:var(--secondary);line-height:1.5}
-.info.ok{background:rgba(52,199,89,.12);color:var(--green)}
-.info.warn{background:rgba(255,59,48,.1);color:var(--red)}
+/* setup steps */
+.step{display:flex;gap:13px;padding:15px 18px;border-bottom:1px solid var(--line);align-items:flex-start}
+.step:last-child{border-bottom:none}
+.step .n{font-family:var(--mono);width:26px;height:26px;border-radius:8px;background:var(--grad);color:#04121a;
+  font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step .b{flex:1;font-size:14px;line-height:1.55;color:var(--txt)}
+.step .b .d{font-size:12px;color:var(--dim)}
+.step .b a{color:var(--cyan);font-weight:700;text-decoration:none}
+.step .b strong{font-weight:700}
 
-.empty{text-align:center;padding:52px 16px;color:var(--secondary)}
-.empty-ico{font-size:52px;margin-bottom:12px}
-.empty h3{font-size:20px;font-weight:600;color:var(--label);margin-bottom:6px}
-
-.car-icon{width:38px;height:38px;border-radius:10px;background:rgba(0,122,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px}
-.car-icon svg{width:22px;height:22px;color:var(--blue)}
+.empty{ text-align:center;padding:56px 20px;color:var(--dim)}
+.empty .ico{font-size:48px;margin-bottom:12px}
+.empty h3{font-size:18px;font-weight:800;color:var(--txt);margin-bottom:6px;font-family:var(--mono)}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-// ── State ──────────────────────────────────────────────────────────────────────
-const S={tab:'reg',modal:null,sel:{cid:null,carid:null},draft:{},draftCar:{}};
+// ── State ──────────────────────────────────────────────────────────────────
+const S={tab:'reg',modal:null,sel:{cid:null,carids:[]},draft:{},draftCar:{},launching:false};
 
-// ── Data ───────────────────────────────────────────────────────────────────────
 let complexes=load('complexes2')||[
   {id:uid(),name:'Luca',addr:'',apt:'4060',url:'https://www.register2park.com/',code:''},
   {id:uid(),name:'Callista Hill Country',addr:'',apt:'728',url:'https://www.register2park.com/',code:''},
@@ -106,200 +200,195 @@ let complexes=load('complexes2')||[
 ];
 let cars=load('cars')||[];
 
+const CAR_EMOJI=['🚗','🚙','🏎️','🚘','🛻','🚕'];
+
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function saveAll(){ls('complexes2',complexes);ls('cars',cars)}
 function ls(k,v){localStorage.setItem(k,JSON.stringify(v))}
 function load(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function selC(){return complexes.find(c=>c.id===S.sel.cid)}
-function selCar(){return cars.find(c=>c.id===S.sel.carid)}
+function selCars(){return cars.filter(c=>S.sel.carids.includes(c.id))}
+function emojiFor(id){const i=cars.findIndex(c=>c.id===id);return CAR_EMOJI[(i<0?0:i)%CAR_EMOJI.length]}
+function regCount(){return load('regcount')||0}
 
-// ── Build clipboard JSON for Scriptable ────────────────────────────────────────
-function buildClipboardData(cx, car){
+// ── Clipboard payload (multi-car; legacy single-car fields kept) ───────────
+function buildClipboardData(cx, list){
+  const first=list[0]||{};
   return JSON.stringify({
-    url:   cx.url   || 'https://www.register2park.com/',
-    apt:   cx.apt   || '',
-    code:  cx.code  || '',
-    make:  car.make  || '',
-    model: car.model || '',
-    year:  car.year  || '',
-    color: car.color || '',
-    plate: car.plate || '',
-    state: car.state || '',
-    email: car.email || '',
+    url: cx.url||'https://www.register2park.com/',
+    apt: cx.apt||'', code: cx.code||'',
+    cars: list.map(c=>({label:c.label||'',make:c.make||'',model:c.model||'',plate:c.plate||'',email:c.email||''})),
+    make:first.make||'',model:first.model||'',plate:first.plate||'',email:first.email||'',label:first.label||'',
   });
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────────
+// ── Render ─────────────────────────────────────────────────────────────────
 function render(){
   let h=`<div class="scr">`;
   if(S.tab==='reg') h+=viewReg();
-  else if(S.tab==='cars') h+=viewCars();
+  else if(S.tab==='cars') h+=viewGarage();
   else h+=viewComplexes();
   h+=`</div><div class="tabs">${renderTabs()}</div>`;
   if(S.modal==='car') h+=modalCar();
   else if(S.modal==='complex') h+=modalComplex();
   else if(S.modal==='autofill') h+=modalAutoFill();
+  if(S.launching) h+=launchOverlay();
   document.getElementById('app').innerHTML=h;
 }
 
 function renderTabs(){
   return [
-    {id:'reg',lbl:'Register',ico:iCar()},
-    {id:'cars',lbl:'Visitor Cars',ico:iCars()},
-    {id:'complexes',lbl:'Complexes',ico:iBuilding()},
+    {id:'reg',lbl:'REGISTER',ico:iBolt()},
+    {id:'cars',lbl:'GARAGE',ico:iCar()},
+    {id:'complexes',lbl:'BASES',ico:iBuilding()},
   ].map(t=>`<button class="tab ${S.tab===t.id?'on':''}" onclick="setTab('${t.id}')">${t.ico}<span>${t.lbl}</span></button>`).join('');
 }
 
-// ── Register view ──────────────────────────────────────────────────────────────
+// ── REGISTER ───────────────────────────────────────────────────────────────
 function viewReg(){
-  const cx=selC(), car=selCar(), canGo=cx&&car;
+  const cx=selC(), sel=selCars(), canGo=cx&&sel.length>0;
   return `
-  <div class="nav"><span class="nav-title">Register</span></div>
-  <p class="nav-sub">Select a complex and the visitor's car</p>
+  <div class="hdr">
+    <div class="brand">PARK_OS<span class="cur"></span></div>
+    <div class="sub">&gt; visitor parking on <b>autopilot</b></div>
+  </div>
 
-  <div class="sec"><div class="sec-hdr">Your Complex</div><div class="card">
-    ${complexes.map(c=>`
-    <button class="row ${S.sel.cid===c.id?'sel':''}" onclick="pickC('${c.id}')">
-      ${S.sel.cid===c.id?`<span class="chk">${iCheck()}</span>`:''}
-      <div class="rb">
-        <div class="rt">${esc(c.name)}</div>
-        ${c.apt?`<div class="rs">Apt <strong>${esc(c.apt)}</strong></div>`:`<div class="rs" style="color:var(--red)">Apt # not set</div>`}
-      </div>
-    </button>`).join('')}
-  </div></div>
+  <div class="stats">
+    <span class="chip">runs <b>${regCount()}</b></span>
+    <span class="chip">garage <b>${cars.length}</b></span>
+    <span class="chip">selected <b>${sel.length}</b></span>
+  </div>
 
-  <div class="sec"><div class="sec-hdr">Visitor's Car</div>
-  ${cars.length===0?`
-  <div class="card"><div class="row" style="color:var(--secondary);font-size:15px;cursor:default">
-    <div class="rb">No cars saved yet — add them in Visitor Cars tab</div>
-  </div></div>
-  <button class="btn" style="margin-top:8px" onclick="quickAddCar()">+ Add Visitor Car Now</button>`
-  :`<div class="card">
-    ${cars.map(c=>`
-    <button class="row ${S.sel.carid===c.id?'sel':''}" onclick="pickCar('${c.id}')">
-      ${S.sel.carid===c.id?`<span class="chk">${iCheck()}</span>`:''}
-      <div class="car-icon">${iCarSmall()}</div>
-      <div class="rb">
-        <div class="rt">${esc(c.label||[c.year,c.make,c.model].filter(Boolean).join(' '))}</div>
-        <div class="rs">${esc(c.plate)}${c.state?' · '+esc(c.state):''}${c.color?' · '+esc(c.color):''}</div>
-      </div>
-    </button>`).join('')}
-    <button class="row" style="color:var(--blue)" onclick="quickAddCar()">
-      <div class="rb"><div class="rt">+ Add Another Car</div></div>
+  <div class="sec"><div class="sec-hdr">01 · base</div>
+    <div class="cxrow">
+      ${complexes.map(c=>`
+      <button class="cx ${S.sel.cid===c.id?'on':''}" onclick="pickC('${c.id}')">
+        <div class="nm">${esc(c.name)}</div>
+        ${c.apt?`<div class="ap">APT ${esc(c.apt)}</div>`:`<div class="ap warn">! apt not set</div>`}
+      </button>`).join('')}
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-hdr">02 · the lot — tap cars to park</div>
+    ${cars.length===0?`
+    <div class="lot-empty">
+      <div class="big">🅿️</div>
+      <p>The lot is empty.<br>Add your regulars in the <b>Garage</b> — register them forever with one tap.</p>
+    </div>
+    <button class="btn grad" onclick="quickAddCar()">+ ADD FIRST CAR</button>`
+    :`<div class="lot">
+      ${cars.map((c,i)=>{
+        const on=S.sel.carids.includes(c.id);
+        return `
+        <button class="slot ${on?'parked':''}" onclick="toggleCar('${c.id}')">
+          <span class="num">SLOT ${String(i+1).padStart(2,'0')}</span>
+          <span class="carwrap"><span class="car">${CAR_EMOJI[i%CAR_EMOJI.length]}</span></span>
+          <div class="who">${esc(c.label||c.make||'Car '+(i+1))}</div>
+          <div class="veh">${esc([c.make,c.model].filter(Boolean).join(' ')||'—')}</div>
+          <span class="plate">${esc(c.plate||'———')}</span>
+        </button>`;}).join('')}
+      <button class="slot add" onclick="quickAddCar()"><span class="plus">+</span> new car</button>
+    </div>`}
+  </div>
+
+  ${canGo?`<div class="ready">✔ ${sel.length} car${sel.length>1?'s':''} queued → <b>${esc(cx.name)}</b> · APT ${esc(cx.apt)}<br>
+    <span class="dim">${sel.map(c=>esc(c.label||c.plate)).join(' · ')}</span></div>`:''}
+
+  <div class="runwrap">
+    <button class="run ${canGo?'armed':''}" ${canGo?'':'disabled'} onclick="doRegister()">
+      ▶ RUN PARKFILL${sel.length>1?' ×'+sel.length:''}
     </button>
-  </div>`}
-
-  ${canGo?`<div class="info ok" style="margin-top:16px">
-    Ready: <strong>${esc(cx.name)}</strong> Apt ${esc(cx.apt)} · <strong>${esc(car.year)} ${esc(car.make)} ${esc(car.model)}</strong> · ${esc(car.plate)}
-  </div>`:''}
-  </div>
-
-  <button class="btn ${canGo?'green':''}" ${canGo?'':'disabled'} onclick="doRegister()" style="margin-top:${cars.length?'16px':'0'}">
-    🚗 Auto-Fill Registration Form
-  </button>`;
+  </div>`;
 }
 
-// ── Cars view ──────────────────────────────────────────────────────────────────
-function viewCars(){
+// ── GARAGE ─────────────────────────────────────────────────────────────────
+function viewGarage(){
   return `
-  <div class="nav">
-    <span class="nav-title">Visitor Cars</span>
-    <button class="nav-btn" onclick="addCar()">${iPlus()}</button>
+  <div class="hdr">
+    <div class="brand">GARAGE<span class="cur"></span></div>
+    <div class="sub">&gt; your regulars, saved once</div>
   </div>
-  <p class="nav-sub">Save regular visitors' cars for quick re-registration</p>
-  ${cars.length===0?`<div class="empty"><div class="empty-ico">🚗</div><h3>No Cars Yet</h3><p>Tap + to add a visitor's car</p></div>`:`
-  <div class="card" style="margin:0 16px">
-    ${cars.map(c=>`
-    <button class="row" onclick="editCar('${c.id}')">
-      <div class="car-icon">${iCarSmall()}</div>
-      <div class="rb">
-        <div class="rt">${esc(c.label||[c.year,c.make,c.model].filter(Boolean).join(' '))}</div>
-        <div class="rs">${esc(c.plate)}${c.state?' · '+esc(c.state):''}${c.year?' · '+esc(c.year):''}</div>
-        ${(c.color||c.email)?`<div class="rc">${[c.color,c.email].filter(Boolean).map(esc).join(' · ')}</div>`:''}
+  <div class="sec"><div class="sec-hdr">${cars.length} vehicle${cars.length===1?'':'s'}</div>
+  ${cars.length===0?`<div class="empty"><div class="ico">🚗</div><h3>GARAGE EMPTY</h3><p>Add a visitor's car once, reuse it forever.</p></div>`:`
+  <div class="glist">
+    ${cars.map((c,i)=>`
+    <button class="gcard" onclick="editCar('${c.id}')">
+      <span class="emoji">${CAR_EMOJI[i%CAR_EMOJI.length]}</span>
+      <div class="gb">
+        <div class="gt">${esc(c.label||[c.make,c.model].filter(Boolean).join(' ')||'Car '+(i+1))}</div>
+        <div class="gs">${esc([c.make,c.model].filter(Boolean).join(' '))}${c.plate?' · '+esc(c.plate):''}${c.email?' · '+esc(c.email):''}</div>
       </div>
-      <span class="chv">${iChev()}</span>
+      <span class="chev">&gt;</span>
     </button>`).join('')}
-  </div>`}`;
+  </div>`}
+  <button class="btn grad" onclick="quickAddCar()">+ ADD CAR</button>
+  </div>`;
 }
 
-// ── Complexes view ─────────────────────────────────────────────────────────────
+// ── BASES ──────────────────────────────────────────────────────────────────
 function viewComplexes(){
   return `
-  <div class="nav"><span class="nav-title">Complexes</span></div>
-  <p class="nav-sub">Set your apartment number and register2park.com URL for each</p>
-  <div class="card" style="margin:0 16px">
+  <div class="hdr">
+    <div class="brand">BASES<span class="cur"></span></div>
+    <div class="sub">&gt; your complexes &amp; their register2park links</div>
+  </div>
+  <div class="sec"><div class="sec-hdr">${complexes.length} saved</div>
+  <div class="glist">
     ${complexes.map(c=>`
-    <button class="row" onclick="editComplex('${c.id}')">
-      <div class="rb">
-        <div class="rt">${esc(c.name)}</div>
-        ${c.apt?`<div class="rs">Apt <strong>${esc(c.apt)}</strong></div>`:`<div class="rs" style="color:var(--red)">⚠ Set your apartment number</div>`}
-        ${c.url&&c.url!=='https://www.register2park.com/'
-          ?`<div class="rc">${esc(c.url)}</div>`
-          :`<div class="rc" style="color:var(--orange)">⚠ Register2Park URL not configured</div>`}
+    <button class="gcard" onclick="editComplex('${c.id}')">
+      <span class="emoji">🏢</span>
+      <div class="gb">
+        <div class="gt">${esc(c.name)}</div>
+        <div class="gs">${c.apt?'APT '+esc(c.apt):'⚠ apt not set'}${c.url&&c.url!=='https://www.register2park.com/'?' · link ✓':' · ⚠ link not set'}</div>
       </div>
-      <span class="chv">${iChev()}</span>
+      <span class="chev">&gt;</span>
     </button>`).join('')}
   </div>
-  <div class="info">💡 To find the URL: open register2park.com in Safari → select your complex → copy the page URL → paste here.</div>`;
+  <div class="mhint">To grab the link: open <b>register2park.com</b> in Safari, find your complex, copy the page URL (it looks like …/register?key=xxxx) and paste it in the complex settings.</div>
+  </div>`;
 }
 
-// ── Auto-fill modal (Scriptable flow) ─────────────────────────────────────────
+// ── LAUNCH ANIMATION ───────────────────────────────────────────────────────
+function launchOverlay(){
+  const sel=selCars();
+  return `<div class="launch">${sel.slice(0,4).map((c,i)=>{
+    const idx=cars.findIndex(x=>x.id===c.id);
+    return `<span class="zoom" style="top:${34+i*11}%;animation-delay:${i*0.12}s">${CAR_EMOJI[(idx<0?0:idx)%CAR_EMOJI.length]}💨</span>`;
+  }).join('')}</div>`;
+}
+
+// ── AUTO-FILL SHEET ────────────────────────────────────────────────────────
 function modalAutoFill(){
-  const cx=selC(), car=selCar();
-  const scriptableInstalled=localStorage.getItem('scriptable_setup');
+  const sel=selCars();
+  const setup=localStorage.getItem('scriptable_setup');
   return `
   <div class="overlay">
     <div class="sheet">
       <div class="handle"></div>
       <div class="mnav">
-        <button class="nav-btn" onclick="closeModal()">Cancel</button>
-        <span class="ttl">Auto-Fill</span>
-        <span style="min-width:60px"></span>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+        <span class="ttl">DEPLOY</span>
+        <span style="min-width:64px"></span>
       </div>
-      ${!scriptableInstalled?`
-      <div class="info">First-time setup: install <strong>Scriptable</strong> (free on the App Store) and add the ParkFill script once.</div>
-      <div class="card" style="margin-bottom:0">
-        <div class="af-step">
-          <div class="af-num">1</div>
-          <div class="af-body">Search <strong>"Scriptable"</strong> in the App Store and install it<br><span style="font-size:13px;color:var(--secondary)">Free · by Simon Støvring</span></div>
-        </div>
-        <div class="af-step">
-          <div class="af-num">2</div>
-          <div class="af-body">Open Scriptable → tap <strong>+</strong> → tap the script name at top and rename it exactly <strong>ParkFill</strong></div>
-        </div>
-        <div class="af-step">
-          <div class="af-num">3</div>
-          <div class="af-body">In Safari open <a href="/parking/parkfill.js" target="_blank"><strong>this link</strong></a> → Select All → Copy → switch back to Scriptable → paste → tap Done</div>
-        </div>
-        <div class="af-step">
-          <div class="af-num">4</div>
-          <div class="af-body">Come back here and tap <strong>Done — I've set up Scriptable</strong></div>
-        </div>
+      ${!setup?`
+      <div class="mhint">One-time setup: install <b>Scriptable</b> (free) and add the ParkFill script.</div>
+      <div class="card" style="margin-top:14px">
+        <div class="step"><div class="n">1</div><div class="b">App Store → install <strong>Scriptable</strong><br><span class="d">free · by Simon Støvring</span></div></div>
+        <div class="step"><div class="n">2</div><div class="b">Scriptable → <strong>+</strong> → rename the script exactly <strong>ParkFill</strong></div></div>
+        <div class="step"><div class="n">3</div><div class="b">Open <a href="/parking/parkfill.js" target="_blank">this link</a> → Select All → Copy → paste into Scriptable → Done</div></div>
       </div>
-      <button class="btn green" style="margin-top:12px" onclick="markSetupDone()">Done — I've set up Scriptable</button>
-      <div style="height:8px"></div>`:`
-      <div class="info ok">Data copied to clipboard! Now run the ParkFill script in Scriptable to auto-fill the form.</div>
-      <div class="card" style="margin-bottom:0">
-        <div class="af-step">
-          <div class="af-num">1</div>
-          <div class="af-body">Open <strong>Scriptable</strong> and run <strong>ParkFill</strong><br><span style="font-size:13px;color:var(--secondary)">Or tap the Scriptable widget if you added one</span></div>
-        </div>
-        <div class="af-step">
-          <div class="af-num">2</div>
-          <div class="af-body">ParkFill opens register2park.com and fills in all the fields automatically 🎉</div>
-        </div>
-      </div>
-      <button class="btn" id="rbtn" style="margin-top:12px;background:var(--secondary)" onclick="reCopy()">📋 Copy Data Again</button>
-      <a href="scriptable:///run?scriptName=ParkFill" class="btn green" style="margin-top:8px;text-align:center;text-decoration:none;display:block">▶ Open Scriptable → ParkFill</a>
-      <div style="height:8px"></div>`}
+      <button class="btn grad" onclick="markSetupDone()">DONE — SCRIPTABLE IS SET UP</button>
+      <div style="height:10px"></div>`:`
+      <div class="mhint ok"><b>${sel.length} car${sel.length>1?'s':''} queued</b> to clipboard. Run ParkFill and watch it go — it fills, submits and emails each confirmation, one car after another. Keep the page on screen until it finishes.</div>
+      <a href="scriptable:///run?scriptName=ParkFill" class="btn grad" style="text-align:center;text-decoration:none">▶ LAUNCH PARKFILL</a>
+      <button class="btn" id="rbtn" onclick="reCopy()">📋 copy data again</button>
+      <div style="height:10px"></div>`}
     </div>
   </div>`;
 }
 
-// ── Car modal ──────────────────────────────────────────────────────────────────
-const STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
-
+// ── CAR SHEET ──────────────────────────────────────────────────────────────
 function modalCar(){
   const d=S.draftCar, isNew=!d.id;
   return `
@@ -307,38 +396,28 @@ function modalCar(){
     <div class="sheet">
       <div class="handle"></div>
       <div class="mnav">
-        <button class="nav-btn" onclick="closeModal()">Cancel</button>
-        <span class="ttl">${isNew?'Add Visitor Car':'Edit Car'}</span>
-        <button class="nav-btn" style="font-weight:600" onclick="saveCar()">Save</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+        <span class="ttl">${isNew?'NEW CAR':'EDIT CAR'}</span>
+        <button class="mbtn" style="font-weight:800" onclick="saveCar()">Save</button>
       </div>
-      <div class="sec-hdr">Driver</div>
+      <div class="sec-hdr" style="padding-top:4px">driver</div>
       <div class="card">
-        <div class="ff"><label>Name / Label</label><input placeholder='e.g. "Mom" or "John"' value="${esc(d.label||'')}" oninput="S.draftCar.label=this.value"></div>
-        <div class="ff"><label>Email</label><input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="for confirmation email" value="${esc(d.email||'')}" oninput="S.draftCar.email=this.value"></div>
+        <div class="ff"><label>name</label><input placeholder='"Mom", "John"…' value="${esc(d.label||'')}" oninput="S.draftCar.label=this.value"></div>
+        <div class="ff"><label>email</label><input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="gets the confirmation" value="${esc(d.email||'')}" oninput="S.draftCar.email=this.value"></div>
       </div>
-      <div class="sec-hdr" style="margin-top:20px">Car</div>
+      <div class="sec-hdr" style="margin-top:20px">vehicle</div>
       <div class="card">
-        <div class="ff"><label>Make</label><input placeholder="Toyota" value="${esc(d.make||'')}" oninput="S.draftCar.make=this.value"></div>
-        <div class="ff"><label>Model</label><input placeholder="Camry" value="${esc(d.model||'')}" oninput="S.draftCar.model=this.value"></div>
-        <div class="ff"><label>Year</label><input placeholder="2022" inputmode="numeric" value="${esc(d.year||'')}" oninput="S.draftCar.year=this.value"></div>
-        <div class="ff"><label>Color</label><input placeholder="Silver" value="${esc(d.color||'')}" oninput="S.draftCar.color=this.value"></div>
+        <div class="ff"><label>make</label><input placeholder="Toyota" value="${esc(d.make||'')}" oninput="S.draftCar.make=this.value"></div>
+        <div class="ff"><label>model</label><input placeholder="Camry" value="${esc(d.model||'')}" oninput="S.draftCar.model=this.value"></div>
+        <div class="ff"><label>plate</label><input placeholder="ABC1234" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.1em" value="${esc(d.plate||'')}" oninput="S.draftCar.plate=this.value.toUpperCase()"></div>
       </div>
-      <div class="sec-hdr" style="margin-top:20px">License Plate</div>
-      <div class="card">
-        <div class="ff"><label>Plate #</label><input placeholder="ABC1234" autocapitalize="characters" value="${esc(d.plate||'')}" oninput="S.draftCar.plate=this.value.toUpperCase()"></div>
-        <div class="ff"><label>State</label>
-          <select onchange="S.draftCar.state=this.value">
-            ${STATES.map(s=>`<option value="${s}"${(d.state||'TX')===s?' selected':''}>${s}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      ${!isNew?`<button class="btn red" style="margin-top:24px" onclick="deleteCar('${d.id}')">Delete Car</button>`:''}
-      <div style="height:20px"></div>
+      ${!isNew?`<button class="btn danger" onclick="deleteCar('${d.id}')">DELETE CAR</button>`:''}
+      <div style="height:22px"></div>
     </div>
   </div>`;
 }
 
-// ── Complex modal ──────────────────────────────────────────────────────────────
+// ── COMPLEX SHEET ──────────────────────────────────────────────────────────
 function modalComplex(){
   const d=S.draft;
   return `
@@ -346,53 +425,60 @@ function modalComplex(){
     <div class="sheet">
       <div class="handle"></div>
       <div class="mnav">
-        <button class="nav-btn" onclick="closeModal()">Cancel</button>
-        <span class="ttl">Edit Complex</span>
-        <button class="nav-btn" style="font-weight:600" onclick="saveComplex()">Save</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+        <span class="ttl">EDIT BASE</span>
+        <button class="mbtn" style="font-weight:800" onclick="saveComplex()">Save</button>
       </div>
-      <div class="sec-hdr">Info</div>
+      <div class="sec-hdr" style="padding-top:4px">info</div>
       <div class="card">
-        <div class="ff"><label>Name</label><input placeholder="Complex Name" value="${esc(d.name||'')}" oninput="S.draft.name=this.value"></div>
-        <div class="ff"><label>Your Apt #</label><input placeholder="e.g. 4060" inputmode="numeric" value="${esc(d.apt||'')}" oninput="S.draft.apt=this.value"></div>
-        <div class="ff"><label>Address</label><input placeholder="123 Main St" value="${esc(d.addr||'')}" oninput="S.draft.addr=this.value"></div>
+        <div class="ff"><label>name</label><input placeholder="Complex name" value="${esc(d.name||'')}" oninput="S.draft.name=this.value"></div>
+        <div class="ff"><label>apt #</label><input placeholder="e.g. 4060" inputmode="numeric" value="${esc(d.apt||'')}" oninput="S.draft.apt=this.value"></div>
       </div>
-      <div class="sec-hdr" style="margin-top:20px">Register2Park</div>
+      <div class="sec-hdr" style="margin-top:20px">register2park</div>
       <div class="card">
         <div class="ff col">
-          <label>Registration URL</label>
+          <label>registration url</label>
           <input type="url" autocapitalize="none" autocorrect="off" spellcheck="false"
-            placeholder="https://www.register2park.com/..."
+            placeholder="https://www.register2park.com/register?key=…"
             value="${esc(d.url||'')}" oninput="S.draft.url=this.value">
         </div>
-        <div class="ff"><label>Property Code</label><input placeholder="Optional" autocapitalize="none" value="${esc(d.code||'')}" oninput="S.draft.code=this.value"></div>
+        <div class="ff"><label>code</label><input placeholder="optional guest code" autocapitalize="none" value="${esc(d.code||'')}" oninput="S.draft.code=this.value"></div>
       </div>
-      <div class="info">Open register2park.com → navigate to your complex's registration page → copy the full URL from the address bar and paste above.</div>
+      <div class="mhint">Open register2park.com in Safari → select your complex → copy the address-bar URL → paste above.</div>
+      <div style="height:22px"></div>
     </div>
   </div>`;
 }
 
-// ── Actions ────────────────────────────────────────────────────────────────────
+// ── Actions ────────────────────────────────────────────────────────────────
 function setTab(t){S.tab=t;render()}
 function pickC(id){S.sel.cid=id;render()}
-function pickCar(id){S.sel.carid=id;render()}
+function toggleCar(id){
+  const i=S.sel.carids.indexOf(id);
+  if(i>=0)S.sel.carids.splice(i,1);else S.sel.carids.push(id);
+  render();
+}
 function closeModal(){S.modal=null;render()}
 
 function doRegister(){
-  const cx=selC(), car=selCar(); if(!cx||!car) return;
-  copyText(buildClipboardData(cx,car)).finally(()=>{S.modal='autofill';render()});
+  const cx=selC(), sel=selCars(); if(!cx||!sel.length) return;
+  copyText(buildClipboardData(cx,sel)).finally(()=>{
+    ls('regcount',regCount()+sel.length);
+    S.launching=true;render();
+    setTimeout(()=>{S.launching=false;S.modal='autofill';render();},1050);
+  });
 }
 
 function markSetupDone(){
   localStorage.setItem('scriptable_setup','1');
-  closeModal();
-  doRegister();
+  S.modal='autofill';render();
 }
 
 function reCopy(){
-  const cx=selC(), car=selCar(); if(!cx||!car) return;
-  copyText(buildClipboardData(cx,car)).then(()=>{
+  const cx=selC(), sel=selCars(); if(!cx||!sel.length) return;
+  copyText(buildClipboardData(cx,sel)).then(()=>{
     const b=document.getElementById('rbtn');
-    if(b){b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy Data Again',2000);}
+    if(b){b.textContent='✅ copied';setTimeout(()=>{const x=document.getElementById('rbtn');if(x)x.textContent='📋 copy data again';},1800);}
   });
 }
 
@@ -407,12 +493,11 @@ function copyText(t){
   });
 }
 
-function addCar(){S.draftCar={state:'TX'};S.modal='car';render()}
-function quickAddCar(){S.draftCar={state:'TX'};S.modal='car';render()}
+function quickAddCar(){S.draftCar={};S.modal='car';render()}
 function editCar(id){const c=cars.find(x=>x.id===id);S.draftCar={...c};S.modal='car';render()}
 function saveCar(){
   const d=S.draftCar;
-  if(!d.make&&!d.plate){alert('Enter at least a plate number or car make.');return}
+  if(!d.plate&&!d.make){alert('Enter at least a plate or make.');return}
   d.id=d.id||uid();
   const idx=cars.findIndex(c=>c.id===d.id);
   if(idx>=0)cars[idx]={...d};else cars.push({...d});
@@ -421,7 +506,7 @@ function saveCar(){
 function deleteCar(id){
   if(!confirm('Delete this car?'))return;
   cars=cars.filter(c=>c.id!==id);
-  if(S.sel.carid===id)S.sel.carid=null;
+  S.sel.carids=S.sel.carids.filter(x=>x!==id);
   saveAll();S.modal=null;render();
 }
 
@@ -433,16 +518,12 @@ function saveComplex(){
   saveAll();S.modal=null;render();
 }
 
-// ── Icons ──────────────────────────────────────────────────────────────────────
+// ── Icons ──────────────────────────────────────────────────────────────────
+function iBolt(){return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 21L13 14H7L13 3H15L13 10H19L13 21H11Z"/></svg>`}
 function iCar(){return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>`}
-function iCars(){return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 11l1.5-4.5h11L19 11H5zm13.5 5c-.83 0-1.5-.67-1.5-1.5S17.67 13 18.5 13s1.5.67 1.5 1.5S19.33 16 18.5 16zm-13 0c-.83 0-1.5-.67-1.5-1.5S4.67 13 5.5 13s1.5.67 1.5 1.5S6.33 16 5.5 16zM18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg>`}
-function iCarSmall(){return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>`}
 function iBuilding(){return`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 11v10h6v-5h2v5h6V11L8 6l-7 5zm12 8h-2v-5H7v5H3v-6.5l5-3.5 5 3.5V19zm2-14V3h6v18h-6v-8h-2v-1.5l2-1.5zM17 7h2V5h-2v2zm0 4h2V9h-2v2zm0 4h2v-2h-2v2z"/></svg>`}
-function iCheck(){return`<svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M7.5 13.5L3.5 9.5 2 11l5.5 5.5 11-11L17 4z"/></svg>`}
-function iChev(){return`<svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
-function iPlus(){return`<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`}
 
-// ── Boot ───────────────────────────────────────────────────────────────────────
+// ── Boot ───────────────────────────────────────────────────────────────────
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 render();
 </script>
