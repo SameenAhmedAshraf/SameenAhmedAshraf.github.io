@@ -1,10 +1,10 @@
-// ParkFill — Parking Registration Auto-Fill  (v18: multi-car, single session)
+// ParkFill — Parking Registration Auto-Fill  (v19: iframe multi-car)
 // ─────────────────────────────────────────────────────────────────────────────
-// One master script installed BEFORE the webview is presented drives every
-// car via an in-page state machine (Scriptable→WebView calls hang while the
-// webview is presented, so nothing may depend on them after present()).
-// Between cars it clicks the site's "Register Another Vehicle" button —
-// same page session, timers keep running.
+// The site's "Register Another Vehicle" navigates the page, which destroys
+// injected scripts — and Scriptable cannot re-inject while the webview is
+// presented. So the master script (installed once, pre-present) keeps the
+// top page alive and runs EVERY car inside a full-screen same-origin
+// iframe, reloading the iframe between cars. Parent timers/HUD survive.
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -36,7 +36,7 @@ async function main() {
 
   let r = "no result";
   try {
-    r = await wv.evaluateJavaScript(masterScript(String(d.apt || "").trim(), cars), true);
+    r = await wv.evaluateJavaScript(masterScript(d.url, String(d.apt || "").trim(), cars), true);
   } catch (e) {
     r = "FAIL: " + e;
   }
@@ -51,7 +51,6 @@ async function main() {
     return;
   }
 
-  // The state machine now runs on in-page timers while the user watches.
   await wv.present(false);
 
   // After the user closes the webview, collect the per-car summary
@@ -76,8 +75,8 @@ async function main() {
   }
 }
 
-function masterScript(apt, cars) {
-  const D = JSON.stringify({ apt: apt, cars: cars })
+function masterScript(url, apt, cars) {
+  const D = JSON.stringify({ url: url, apt: apt, cars: cars })
     .replace(/</g, "\\u003C").replace(/>/g, "\\u003E");
 
   return `(function () {
@@ -89,35 +88,55 @@ function masterScript(apt, cars) {
   window.__pf = { results: [], finished: false };
   var results = window.__pf.results;
 
-  function el(id) { return document.getElementById(id); }
+  // ── Full-screen iframe that hosts the registration flow ───────────────────
+  var ifr = document.createElement("iframe");
+  ifr.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:2147483000;background:#fff";
+  var loadedAt = 0;
+  ifr.addEventListener("load", function () {
+    loadedAt = Date.now();
+    hookAlert();
+  });
+  document.body.appendChild(ifr);
+  ifr.src = D.url;
+
+  function doc() { try { return ifr.contentDocument; } catch (e) { return null; } }
+  function win() { try { return ifr.contentWindow; } catch (e) { return null; } }
+  function el(id) { var d2 = doc(); return d2 ? d2.getElementById(id) : null; }
   function vis(e) { return !!(e && e.offsetParent !== null); }
 
+  var errFlag = false;
+  function hookAlert() {
+    try {
+      var W = win();
+      if (!W) return;
+      var real = W.alert;
+      W.alert = function (msg) {
+        if (/ajax|error/i.test(String(msg))) { errFlag = true; return; }
+        try { real(msg); } catch (e) {}
+      };
+    } catch (e) {}
+  }
+
   function fill(id, v) {
-    var e = el(id);
-    if (!e || v === undefined || v === null || v === "") return false;
+    var e = el(id), W = win();
+    if (!e || !W || v === undefined || v === null || v === "") return false;
     e.value = String(v);
-    e.dispatchEvent(new Event("input",  { bubbles: true }));
-    e.dispatchEvent(new Event("change", { bubbles: true }));
-    e.dispatchEvent(new Event("blur",   { bubbles: true }));
+    try {
+      e.dispatchEvent(new W.Event("input",  { bubbles: true }));
+      e.dispatchEvent(new W.Event("change", { bubbles: true }));
+      e.dispatchEvent(new W.Event("blur",   { bubbles: true }));
+    } catch (err) {
+      e.dispatchEvent(new Event("input",  { bubbles: true }));
+      e.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     return true;
   }
 
   function click(id) { var e = el(id); if (!e) return false; e.click(); return true; }
 
-  function btnByText(re) {
-    var els = document.querySelectorAll('button, a, [role="button"], input[type="button"], input[type="submit"]');
-    for (var k = 0; k < els.length; k++) {
-      var e = els[k];
-      if (!vis(e)) continue;
-      var t = (e.textContent || e.value || "").replace(/\\s+/g, " ").trim();
-      if (re.test(t)) return e;
-    }
-    return null;
-  }
-
-  // Dismiss visible dialogs that are NOT the email modal (e.g. "sent" confirmations)
-  function dismissStrayModals() {
-    var mods = document.querySelectorAll('.modal, [role="dialog"], .sweet-alert');
+  function dismissErrorModal() {
+    var d2 = doc(); if (!d2) return;
+    var mods = d2.querySelectorAll('.modal, [role="dialog"], .sweet-alert');
     for (var k = 0; k < mods.length; k++) {
       var m = mods[k];
       if (!vis(m)) continue;
@@ -132,29 +151,17 @@ function masterScript(apt, cars) {
     }
   }
 
-  // The site announces AJAX failures via alert() — swallow and flag for retry
-  var errFlag = false;
-  try {
-    var realAlert = window.alert;
-    window.alert = function (msg) {
-      if (/ajax|error/i.test(String(msg))) { errFlag = true; return; }
-      try { realAlert(msg); } catch (e) {}
-    };
-  } catch (e) {}
-
-  // ── HUD ────────────────────────────────────────────────────────────────────
+  // ── HUD on the parent page (survives iframe reloads) ──────────────────────
   var hud = document.createElement("div");
   hud.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:2147483647;" +
-    "background:rgba(8,10,18,.88);color:#a5f3fc;font:600 12px ui-monospace,Menlo,monospace;" +
+    "background:rgba(8,10,18,.9);color:#a5f3fc;font:600 12px ui-monospace,Menlo,monospace;" +
     "padding:9px 16px;border-radius:999px;border:1px solid rgba(165,243,252,.35);pointer-events:none;" +
     "max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
-  function setHud(t) {
-    if (!hud.parentNode && document.body) document.body.appendChild(hud);
-    hud.textContent = t;
-  }
+  document.body.appendChild(hud);
+  function setHud(t) { hud.textContent = t; }
 
-  // ── State machine ──────────────────────────────────────────────────────────
-  var i = 0, st = "boot", tk = 0;
+  // ── State machine (runs in the parent; acts on the iframe) ────────────────
+  var i = 0, st = "ifload", tk = 0;
   var attempts = 0, submitAt = 0, deadline = 0;
   var emailClicked, emailFilled, emailSent, sendAt, doneAt;
   function resetCar() { attempts = 0; emailClicked = emailFilled = emailSent = false; errFlag = false; }
@@ -165,19 +172,27 @@ function masterScript(apt, cars) {
 
   function doneCar(msg) {
     results.push(label() + ": " + msg);
-    if (i < CARS.length - 1) { st = "another"; tk = 0; }
-    else finishAll();
+    if (i < CARS.length - 1) {
+      i++; resetCar();
+      setHud("next: " + label() + "…");
+      ifr.src = D.url;        // clean page for the next car
+      st = "ifload"; tk = 0;
+    } else finishAll();
   }
   function failCar(msg) {
     results.push(label() + ": FAIL — " + msg);
-    for (var k = i + 1; k < CARS.length; k++) results.push((CARS[k].label || CARS[k].plate) + ": skipped");
-    ready("FAIL: " + msg);   // no-op if already ready
-    finishAll();
+    if (i < CARS.length - 1) {
+      i++; resetCar();
+      ifr.src = D.url;        // still try the remaining cars
+      st = "ifload"; tk = 0;
+    } else finishAll();
+    ready("ready");           // never block presentation on a failure
   }
   function finishAll() {
     window.__pf.finished = true;
     var fails = results.filter(function (x) { return /FAIL|skipped/.test(x); }).length;
-    setHud(fails ? "done — " + fails + " issue(s), close to see details" : "✓ all " + CARS.length + " registered — you can close this");
+    setHud(fails ? "done — " + fails + " issue(s), close this page to see details"
+                 : "✓ all " + CARS.length + " registered — you can close this");
     st = "halt";
   }
 
@@ -186,11 +201,11 @@ function masterScript(apt, cars) {
     tk++;
     var car = CARS[i];
 
-    if (st === "boot") {
-      setHud(who() + " · opening form…");
+    if (st === "ifload") {
+      setHud(who() + " · loading page…");
       if (vis(el("vehicleApt"))) { st = "form"; tk = 0; }
       else if (vis(el("registrationTypeVisitor"))) { click("registrationTypeVisitor"); st = "form"; tk = 0; }
-      else if (tk > 37) failCar("registration page did not load");
+      else if (tk > 50) failCar("registration page did not load in the frame");
     }
 
     else if (st === "form") {
@@ -200,9 +215,9 @@ function masterScript(apt, cars) {
         fill("vehicleModel",               car.model);
         fill("vehicleLicensePlate",        car.plate);
         fill("vehicleLicensePlateConfirm", car.plate);
-        submitAt = Date.now() + (i === 0 ? 4500 : 1800);
+        submitAt = Date.now() + (completed ? 1800 : 4500);
         st = "submit"; tk = 0;
-        ready("ready");   // first car: signal Scriptable to present the webview
+        ready("ready");   // first fill: let Scriptable present the webview
         setHud(who() + " · filled, submitting…");
       } else if (tk > 37) failCar("vehicle form never appeared");
     }
@@ -219,7 +234,7 @@ function masterScript(apt, cars) {
     else if (st === "registering") {
       if (vis(el("email-confirmation"))) { st = "email"; tk = 0; }
       else if (errFlag || vis(el("error-modal")) || Date.now() > deadline) {
-        if (vis(el("error-modal"))) dismissStrayModals();
+        if (vis(el("error-modal"))) dismissErrorModal();
         if (attempts < 4) {
           attempts++; errFlag = false; deadline = Date.now() + 9000;
           click("vehicleInformation");
@@ -250,27 +265,10 @@ function masterScript(apt, cars) {
       if (emailSent && Date.now() >= doneAt) doneCar("registered + email sent");
       else if (!emailFilled && tk > 30) doneCar("registered (email box never opened)");
     }
-
-    else if (st === "another") {
-      setHud("next: " + (CARS[i + 1].label || CARS[i + 1].plate) + "…");
-      dismissStrayModals();
-      var b = el("register-another-vehicle") || el("registerAnotherVehicle") || el("register-another")
-           || btnByText(/(register|add)\\s+another|another\\s+(vehicle|car)/i);
-      if (b) {
-        b.click();
-        i++; resetCar(); st = "boot"; tk = 0;
-      } else if (vis(el("registrationTypeVisitor")) || vis(el("vehicleApt"))) {
-        i++; resetCar(); st = "boot"; tk = 0;
-      } else if (tk > 37) {
-        for (var k = i + 1; k < CARS.length; k++)
-          results.push((CARS[k].label || CARS[k].plate) + ": skipped — no Register-Another button, run ParkFill again for this car");
-        finishAll();
-      }
-    }
   }, 400);
 
-  // If the very first page never produces anything, fail the whole run
-  setTimeout(function () { ready("FAIL: page never showed the form. URL: " + location.href); }, 30000);
+  // Watchdog: if nothing ever appears, unblock Scriptable with a failure
+  setTimeout(function () { ready("FAIL: page never showed the form. URL: " + location.href); }, 35000);
 })();`;
 }
 
