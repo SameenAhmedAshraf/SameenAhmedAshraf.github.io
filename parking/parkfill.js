@@ -1,164 +1,20 @@
-// ParkFill — Parking Registration Auto-Fill  (v13)
+// ParkFill — Parking Registration Auto-Fill  (v14)
 // ──────────────────────────────────────────────────
-// Install / update in Scriptable:
-//   1. Open Scriptable → open the ParkFill script (or tap + and rename it ParkFill)
-//   2. Select All → Delete
-//   3. In Safari open: sameenahmedashraf.github.io/parking/parkfill.js
-//   4. Select All → Copy → back to Scriptable → Paste → tap Done
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function jsonLit(d) {
-  return JSON.stringify(d).replace(/</g, '\\u003C').replace(/>/g, '\\u003E');
-}
-
-// Helper library injected into the page on every call (self-contained so it
-// survives full-page navigations between register2park steps).
-const HELPERS = `
-  function vis(el){ return !!(el && el.offsetParent !== null); }
-
-  // Native value setter — bypasses React's value tracker so onChange fires.
-  // Works for plain HTML forms too. Returns true only if the value stuck.
-  function setVal(el, v){
-    if(!el) return false;
-    var s = String(v == null ? '' : v);
-    try {
-      var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-      var setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-      el.focus();
-      setter.call(el, '');  el.dispatchEvent(new Event('input', {bubbles:true}));
-      setter.call(el, s);   el.dispatchEvent(new Event('input', {bubbles:true}));
-    } catch(e) {
-      try { el.value = s; el.dispatchEvent(new Event('input', {bubbles:true})); } catch(_) {}
-    }
-    el.dispatchEvent(new Event('change', {bubbles:true}));
-    el.dispatchEvent(new Event('blur',   {bubbles:true}));
-    return el.value === s;
-  }
-
-  function setSelect(el, v){
-    var x = String(v).toLowerCase();
-    var m = Array.from(el.options).find(function(o){
-      var a = (o.value||'').toLowerCase(), b = (o.text||'').toLowerCase();
-      return a === x || b === x || b.indexOf(x) === 0;
-    });
-    if(m){ el.value = m.value; el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true})); return true; }
-    return false;
-  }
-
-  function fields(){
-    return Array.from(document.querySelectorAll('input,textarea,select')).filter(function(el){
-      if(!vis(el)) return false;
-      var t = (el.getAttribute('type')||'').toLowerCase();
-      return ['hidden','button','submit','checkbox','radio','image','file','reset'].indexOf(t) < 0;
-    });
-  }
-
-  // Build a context string for an input from its own attributes, its label,
-  // and nearby preceding text (handles div-wrapped and table layouts).
-  function ctx(el){
-    var parts = [el.name, el.id, el.placeholder, el.getAttribute('aria-label')];
-    try {
-      if(el.id){
-        var sel = (window.CSS && CSS.escape) ? CSS.escape(el.id) : el.id;
-        var l = document.querySelector('label[for="' + sel + '"]');
-        if(l) parts.push(l.textContent);
-      }
-    } catch(e) {}
-    var w = el.closest && el.closest('label'); if(w) parts.push(w.textContent);
-    var node = el;
-    for(var hop = 0; hop < 2 && node; hop++){
-      var sib = node.previousElementSibling, c = 0;
-      while(sib && c < 2){ parts.push(sib.textContent); sib = sib.previousElementSibling; c++; }
-      node = node.parentElement;
-    }
-    return parts.filter(Boolean).join(' ').replace(/\\s+/g, ' ').toLowerCase();
-  }
-
-  function fillVehicle(D){
-    var ins = fields(), used = [], hit = 0;
-    function take(re, v, all){
-      var got = 0;
-      for(var i = 0; i < ins.length; i++){
-        var el = ins[i];
-        if(!all && used.indexOf(el) >= 0) continue;
-        if(re.test(ctx(el))){
-          var ok = el.tagName === 'SELECT' ? setSelect(el, v) : setVal(el, v);
-          if(ok){ used.push(el); got++; if(!all) break; }
-        }
-      }
-      return got;
-    }
-    if(D.apt)   hit += take(/apart|\\bapt\\b|\\bunit\\b|suite/, D.apt, false) ? 1 : 0;
-    if(D.make)  hit += take(/\\bmake\\b|manufacturer/, D.make, false) ? 1 : 0;
-    if(D.model) hit += take(/\\bmodel\\b/, D.model, false) ? 1 : 0;
-    if(D.year)  hit += take(/\\byear\\b/, D.year, false) ? 1 : 0;
-    if(D.color) hit += take(/colou?r/, D.color, false) ? 1 : 0;
-    if(D.plate) hit += take(/plate|licen/, D.plate, true) ? 1 : 0;   // plate + confirm plate
-    if(D.state) take(/\\bstate\\b|province/, D.state, false);
-    if(D.code)  take(/\\bcode\\b/, D.code, false);
-    return hit;
-  }
-
-  function clickText(reSrc){
-    var re = new RegExp(reSrc, 'i');
-    var btns = Array.from(document.querySelectorAll(
-      'button,[role="button"],a,input[type="button"],input[type="submit"],input[type="image"]'
-    )).filter(vis);
-    var b = btns.find(function(el){
-      var t = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '').replace(/\\s+/g,' ').trim();
-      return re.test(t);
-    });
-    if(b){
-      try { b.click(); } catch(e) {}
-      try { b.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); } catch(e) {}
-      return true;
-    }
-    return false;
-  }
-
-  function submitForm(){
-    var f = document.querySelector('form'), btn = null;
-    if(f){
-      btn = f.querySelector('button[type="submit"],input[type="submit"]');
-      if(!btn){ var bs = Array.from(f.querySelectorAll('button')).filter(vis); if(bs.length) btn = bs[bs.length-1]; }
-    }
-    if(btn){
-      try { btn.click(); } catch(e) {}
-      try { btn.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); } catch(e) {}
-      return true;
-    }
-    return false;
-  }
-
-  function emailInput(){
-    return fields().find(function(el){
-      var t = (el.getAttribute('type')||'').toLowerCase();
-      return t === 'email' || /e.?mail/.test(ctx(el));
-    });
-  }
-
-  function fieldList(){
-    return fields().map(function(el){
-      return (el.name || el.id || el.placeholder || el.getAttribute('aria-label') || ctx(el) || el.tagName).slice(0,30);
-    }).filter(Boolean).slice(0,15);
-  }
-`;
-
-function step(d, body) {
-  return '(function(){var D=' + jsonLit(d) + ';' + HELPERS + ';' + body + '})();';
-}
+// Uses register2park.com's exact element IDs:
+//   registrationTypeVisitor, vehicleApt, vehicleMake, vehicleModel,
+//   vehicleLicensePlate, vehicleLicensePlateConfirm, vehicleInformation,
+//   email-confirmation, emailConfirmationEmailView, email-confirmation-send-view
 
 async function main() {
   const raw = Pasteboard.paste();
   let d;
   try {
     d = JSON.parse(raw);
-    if (!d.url) throw new Error();
+    if (!d.url) throw 0;
   } catch (e) {
     const a = new Alert();
     a.title = "ParkFill";
-    a.message = "Open the Park Register app, pick a complex and car, then tap Auto-Fill to load the data.";
+    a.message = "Open Park Register, pick a complex and car, then tap Auto-Fill first.";
     a.addAction("OK");
     await a.present();
     return;
@@ -167,71 +23,118 @@ async function main() {
   const wv = new WebView();
   await wv.loadURL(d.url);
 
-  // Present the WebView so its JS context is active, then drive each step
-  // from here (awaited) instead of with in-page timers that get wiped on
-  // navigation. Don't await present() yet — keep running underneath it.
-  const closed = wv.present(false);
-  await sleep(1200);
-
-  // Step 1 — landing page: click "Visitor Parking" if present
+  // Single injection; the page script walks through every step and calls
+  // completion() when finished. The WebView is presented after, showing
+  // the final confirmation page.
+  let result = "no result";
   try {
-    if (await wv.evaluateJavaScript(step(d, "return clickText('visitor.?parking');"))) {
-      await sleep(1900);
-    }
-  } catch (e) {}
-
-  // Step 2 — fill the vehicle form, retrying while React/the page mounts
-  let hit = 0;
-  for (let i = 0; i < 8; i++) {
-    try { hit = (await wv.evaluateJavaScript(step(d, "return fillVehicle(D);"))) || 0; } catch (e) { hit = 0; }
-    if (hit > 0) break;
-    await sleep(700);
+    result = await wv.evaluateJavaScript(autoScript(d), true);
+  } catch (e) {
+    result = "Script error: " + e;
   }
 
-  if (hit === 0) {
-    let list = [];
-    try { list = (await wv.evaluateJavaScript(step(d, "return fieldList();"))) || []; } catch (e) {}
+  if (String(result).indexOf("FAIL") === 0 || String(result).indexOf("Script error") === 0) {
     const a = new Alert();
-    a.title = "ParkFill v13 — Couldn't Match Fields";
-    a.message = "The form is open but its fields didn't match.\n\nFields found:\n" +
-      (list.length ? list.join("\n") : "(none — page may not be the form yet)") +
-      "\n\nYou can fill it in manually.";
-    a.addAction("OK");
+    a.title = "ParkFill";
+    a.message = String(result);
+    a.addAction("Open page");
     await a.present();
-    await closed;
-    return;
   }
 
-  // Step 3 — submit the vehicle form (the red "Next" button)
-  await sleep(500);
-  try {
-    const clickedNext = await wv.evaluateJavaScript(step(d, "return clickText('^\\\\s*next\\\\s*$');"));
-    if (!clickedNext) await wv.evaluateJavaScript(step(d, "return submitForm();"));
-  } catch (e) {}
-  await sleep(1700);
+  await wv.present(false);
+}
 
-  // Step 4 — click the blue "E-Mail Confirmation" button (best effort)
-  try {
-    await wv.evaluateJavaScript(step(d, "return clickText('e.?mail.*confirm|confirm.*e.?mail|e.?mail');"));
-  } catch (e) {}
-  await sleep(1100);
+function autoScript(d) {
+  const D = JSON.stringify(d).replace(/</g, "\\u003C").replace(/>/g, "\\u003E");
 
-  // Step 5 — fill the email in the dialog, then click the green "Send"
-  if (d.email) {
-    let mailed = false;
-    for (let i = 0; i < 6; i++) {
-      try { mailed = await wv.evaluateJavaScript(step(d, "var e=emailInput(); return (e && D.email) ? setVal(e, D.email) : false;")); } catch (e) {}
-      if (mailed) break;
-      await sleep(500);
-    }
-    if (mailed) {
-      await sleep(400);
-      try { await wv.evaluateJavaScript(step(d, "return clickText('^\\\\s*send\\\\s*$');")); } catch (e) {}
-    }
+  return `(function () {
+  var D = ${D};
+  var done = false;
+
+  function finish(msg) {
+    if (done) return;
+    done = true;
+    completion(msg);
   }
 
-  // Keep the WebView open so you can verify / tap through anything remaining.
-  await closed;
+  function el(id) { return document.getElementById(id); }
+
+  function fill(id, v) {
+    var e = el(id);
+    if (!e || v === undefined || v === null || v === "") return false;
+    e.value = String(v);
+    e.dispatchEvent(new Event("input",  { bubbles: true }));
+    e.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
+  function click(id) {
+    var e = el(id);
+    if (!e) return false;
+    e.click();
+    return true;
+  }
+
+  // Poll until element with id exists and is visible, then cb(); else fail()
+  function waitFor(id, tries, ms, cb, fail) {
+    (function poll(n) {
+      var e = el(id);
+      if (e && e.offsetParent !== null) return cb();
+      if (n <= 0) return fail();
+      setTimeout(function () { poll(n - 1); }, ms);
+    })(tries);
+  }
+
+  // Step 1 — click "Visitor Parking"
+  waitFor("registrationTypeVisitor", 25, 400, function () {
+    click("registrationTypeVisitor");
+    stepForm();
+  }, function () {
+    // Button not there — maybe the form is already showing
+    if (el("vehicleApt")) stepForm();
+    else finish("FAIL: Visitor Parking button not found. Check the complex URL points to your property page. URL: " + location.href);
+  });
+
+  // Step 2 — fill the vehicle form and press Next
+  function stepForm() {
+    waitFor("vehicleApt", 25, 400, function () {
+      fill("vehicleApt",                 D.apt);
+      fill("vehicleMake",                D.make);
+      fill("vehicleModel",               D.model);
+      fill("vehicleLicensePlate",        D.plate);
+      fill("vehicleLicensePlateConfirm", D.plate);
+      setTimeout(function () {
+        click("vehicleInformation");   // the red Next button
+        stepEmail();
+      }, 600);
+    }, function () {
+      finish("FAIL: vehicle form did not appear after clicking Visitor Parking.");
+    });
+  }
+
+  // Step 3 — E-Mail Confirmation → fill email → Send
+  function stepEmail() {
+    if (!D.email) { finish("OK: registered (no email saved for this car)"); return; }
+    // Registration takes a moment to process; wait up to ~20s for the button
+    waitFor("email-confirmation", 40, 500, function () {
+      click("email-confirmation");
+      waitFor("emailConfirmationEmailView", 20, 400, function () {
+        fill("emailConfirmationEmailView", D.email);
+        setTimeout(function () {
+          click("email-confirmation-send-view");   // the green Send button
+          setTimeout(function () { finish("OK: registered and confirmation email sent"); }, 900);
+        }, 400);
+      }, function () {
+        finish("OK: registered, but the email box did not open — tap E-Mail Confirmation manually.");
+      });
+    }, function () {
+      finish("OK: submitted, but the E-Mail Confirmation button never appeared — check the page.");
+    });
+  }
+
+  // Watchdog so the script can never hang forever
+  setTimeout(function () { finish("FAIL: timed out after 60s. URL: " + location.href); }, 60000);
+})();`;
 }
 
 main();
