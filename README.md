@@ -1,154 +1,54 @@
-# 🌐 Sameen Ahmed Ashraf's GitHub Pages Portfolio
+# sameenahmedashraf.github.io
 
-This is my personal portfolio website hosted on GitHub Pages at `sameenashraf.github.io`.
+Personal site hosted on GitHub Pages. Two things live here:
 
-## 🚀 Quick Start
+| What | Where | Stack |
+|------|-------|-------|
+| **Portfolio** — data & analytics work, projects, certificates | [sameenahmedashraf.github.io](https://sameenahmedashraf.github.io) | Jekyll (minima theme) |
+| **PARK_OS** — visitor-parking automation PWA | [sameenahmedashraf.github.io/parking](https://sameenahmedashraf.github.io/parking/) | Vanilla JS PWA + Scriptable companion script |
 
-### 1. Prerequisites
-- GitHub account
-- Git installed on your machine
-- Basic knowledge of GitHub Pages
+## Repository layout
 
-### 2. Deploy to GitHub Pages
+```
+├── _config.yml          Jekyll config (portfolio)
+├── index.md             Portfolio home page
+├── _layouts/ _includes/ _data/ assets/
+│                        Portfolio theme, partials, images
+├── parking/             PARK_OS — self-contained PWA (see parking/README.md)
+│   ├── index.html       The app (UI, state, localStorage)
+│   ├── parkfill.js      Scriptable auto-fill script (copied into the iOS Scriptable app)
+│   ├── manifest.json    PWA manifest
+│   └── sw.js            Service worker (cache versioning)
+└── .github/workflows/   Jekyll build + Pages deploy on push to main
+```
 
-1. **Create a new repository** on GitHub named `sameenashraf.github.io` (replace with your GitHub username)
-2. **Clone this repository** into that GitHub repository
-3. **Push to main branch** - GitHub Pages will automatically build and deploy your site
+## Portfolio
+
+- Personal info and links: `_config.yml`
+- Home page content: `index.md`
+- Projects: `_data/projects.yml`
+- Images: `assets/images/`
+
+## PARK_OS (parking)
+
+A PWA that registers visitor cars on register2park.com automatically —
+multi-select saved cars, run once, every car gets registered and its driver
+emailed a confirmation. Full documentation, architecture and setup live in
+[`parking/README.md`](parking/README.md).
+
+## Deploying
+
+Push to `main` — the *Deploy Jekyll site to Pages* workflow builds and
+publishes automatically. The `parking/` app is copied through Jekyll as
+static files (`parking/index.html` carries `layout: none` front matter so
+the portfolio layout is not injected).
+
+When changing anything under `parking/` that clients cache, bump the `CACHE`
+version constant in `parking/sw.js` so installed PWAs pick up the update.
+
+## Local preview
 
 ```bash
-# Clone this repo
-git clone <this-repo-url> sameenashraf.github.io
-
-# Navigate to folder
-cd sameenashraf.github.io
-
-# Push to your new repo
-git remote set-url origin https://github.com/YOUR-USERNAME/YOUR-USERNAME.github.io.git
-git push -u origin main
+bundle install
+bundle exec jekyll serve   # http://localhost:4000
 ```
-
-### 3. Your site will be live at:
-👉 `https://sameenashraf.github.io` (or your username)
-
----
-
-## ✏️ Customize Your Portfolio
-
-### 1. **Update Personal Info** (`_config.yml`)
-```yaml
-title: "Your Name — Your Title"
-author: "Your Name"
-github_username: "your-github-username"
-linkedin_username: "your-linkedin-username"
-```
-
-### 2. **Update About Section** (`index.md`)
-- Replace the profile picture at `assets/images/profile.jpg` with your own
-- Update the about text with your bio
-- Customize skills and social links
-
-### 3. **Add Your Projects** (`_data/projects.yml`)
-Update the YAML file with your actual GitHub projects:
-
-```yaml
-- title: "Your Project Name"
-  link: "https://github.com/your-username/repo-name"
-  description: "Brief description of what your project does"
-  stack: "Python · SQL · Tableau · Docker"
-  image: "/assets/images/project-name.jpg"
-  screenshot: "/assets/images/project-name-screenshot.jpg"
-```
-
-**Tips:**
-- You can use placeholder images or add your own to `assets/images/`
-- Include up to 4 projects for best layout
-- Add links to your actual GitHub repositories
-
-### 4. **Add Your Certificates** (`_data/certificates.yml`)
-Update with certificates from your LinkedIn profile:
-
-```yaml
-- title: "Certificate Name"
-  issuer: "Issuing Organization"
-  date: "2024"
-  link: "https://www.linkedin.com/in/your-username/details/certifications/"
-  image: "/assets/images/certificate-name.jpg"
-  screenshot: "/assets/images/certificate-screenshot.jpg"
-```
-
----
-
-## 📁 Project Structure
-
-```
-sameenashraf.github.io/
-├── _config.yml           # Site configuration
-├── _data/
-│   ├── projects.yml      # Your projects data
-│   └── certificates.yml  # Your certificates data
-├── _includes/
-│   └── head.html         # HTML head template
-├── _layouts/
-│   └── default.html      # Main layout template
-├── assets/
-│   ├── css/
-│   │   └── styles.css    # Site styling
-│   └── images/           # Your images go here
-├── index.md              # Home page content
-└── README.md             # This file
-```
-
----
-
-## 🎨 Customization Tips
-
-### Change Colors
-Edit the CSS variables in `assets/css/styles.css`:
-```css
-:root {
-  --bg: #0b1220;          /* Background */
-  --panel: #0f172a;       /* Card background */
-  --accent: #60a5fa;      /* Primary color */
-  --text: #e5e7eb;        /* Text color */
-  --muted: #94a3b8;       /* Secondary text */
-}
-```
-
-### Add Social Links
-In `index.md`, add more social links to the `.social-links` section:
-```html
-<a href="https://twitter.com/your-handle" target="_blank" aria-label="Twitter">
-  <i class="fa-brands fa-twitter"></i>
-</a>
-```
-
-### Update Navigation
-Edit the navigation in `_layouts/default.html` to add/remove sections
-
----
-
-## 📝 Notes
-
-- **No build required** - Just push to GitHub and your site updates automatically
-- **Use markdown** - `index.md` is in markdown format
-- **Images**: Add your images to `assets/images/` and reference them in your YAML files
-- **Dark/Light mode**: The site automatically respects system preferences
-
----
-
-## 🔗 Useful Links
-
-- [GitHub Pages Documentation](https://pages.github.com)
-- [Jekyll Documentation](https://jekyllrb.com/)
-- [FontAwesome Icons](https://fontawesome.com/icons) - For social icons
-- [Markdown Guide](https://www.markdownguide.org/)
-
----
-
-## 📧 Support
-
-For issues or questions about GitHub Pages, visit the [GitHub Community Forum](https://github.community).
-
----
-
-**Happy coding!** 🎉

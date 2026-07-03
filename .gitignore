@@ -1,0 +1,15 @@
+# Jekyll build output
+_site/
+.jekyll-cache/
+.jekyll-metadata
+
+# Ruby / Bundler
+vendor/
+.bundle/
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
