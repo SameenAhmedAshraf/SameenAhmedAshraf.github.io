@@ -96,8 +96,6 @@ function masterScript(url, apt, cars) {
     loadedAt = Date.now();
     hookAlert();
   });
-  document.body.appendChild(ifr);
-  ifr.src = D.url;
 
   function doc() { try { return ifr.contentDocument; } catch (e) { return null; } }
   function win() { try { return ifr.contentWindow; } catch (e) { return null; } }
@@ -157,8 +155,20 @@ function masterScript(url, apt, cars) {
     "background:rgba(8,10,18,.9);color:#a5f3fc;font:600 12px ui-monospace,Menlo,monospace;" +
     "padding:9px 16px;border-radius:999px;border:1px solid rgba(165,243,252,.35);pointer-events:none;" +
     "max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
-  document.body.appendChild(hud);
   function setHud(t) { hud.textContent = t; }
+
+  // Attach only once <body> exists — the page can report loaded before it does
+  (function attach(n) {
+    if (!document.body) {
+      if (n <= 0) { ready("FAIL: page has no body — did the URL load?"); return; }
+      setTimeout(function () { attach(n - 1); }, 150);
+      return;
+    }
+    document.body.appendChild(ifr);
+    document.body.appendChild(hud);
+    ifr.src = D.url;
+    startMachine();
+  })(100);
 
   // ── State machine (runs in the parent; acts on the iframe) ────────────────
   var i = 0, st = "ifload", tk = 0;
@@ -196,7 +206,12 @@ function masterScript(url, apt, cars) {
     st = "halt";
   }
 
-  var timer = setInterval(function () {
+  var timer = null;
+  function startMachine() {
+    if (timer) return;
+    timer = setInterval(tick, 400);
+  }
+  function tick() {
     if (st === "halt") { clearInterval(timer); return; }
     tk++;
     var car = CARS[i];
@@ -265,7 +280,7 @@ function masterScript(url, apt, cars) {
       if (emailSent && Date.now() >= doneAt) doneCar("registered + email sent");
       else if (!emailFilled && tk > 30) doneCar("registered (email box never opened)");
     }
-  }, 400);
+  }
 
   // Watchdog: if nothing ever appears, unblock Scriptable with a failure
   setTimeout(function () { ready("FAIL: page never showed the form. URL: " + location.href); }, 35000);
