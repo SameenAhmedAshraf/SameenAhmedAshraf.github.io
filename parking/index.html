@@ -205,15 +205,16 @@ let cars=load('cars')||[];
 
 const CAR_EMOJI=['🚗','🚙','🏎️','🚘','🛻','🚕'];
 const DURATIONS=[
-  {d:0, lbl:'until stopped'},
+  {d:-1,lbl:'off — just today'},
   {d:1, lbl:'1 day'},
   {d:3, lbl:'3 days'},
   {d:7, lbl:'1 week'},
   {d:14,lbl:'2 weeks'},
   {d:30,lbl:'30 days'},
+  {d:0, lbl:'until stopped'},
 ];
-S.autoDays=load('autodays')??0;
-function durLabel(d){const o=DURATIONS.find(x=>x.d===d);return o?('auto: '+o.lbl):'auto: until stopped'}
+S.autoDays=load('autodays')??-1;
+function durLabel(d){const o=DURATIONS.find(x=>x.d===d);return o?('auto: '+o.lbl):'auto: off'}
 function setDays(d){S.autoDays=d;ls('autodays',d);render()}
 
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
@@ -314,7 +315,7 @@ function viewReg(){
         <div class="nm">${o.lbl}</div>
       </button>`).join('')}
     </div>
-    <div class="durhint">Used when you save this as ParkAuto's daily job — it stops itself after this long.</div>
+    <div class="durhint">For ParkAuto daily runs. "off" = one-time registration only (visitor here just today); a length makes ParkAuto repeat daily then stop itself.</div>
   </div>
 
   ${canGo?`<div class="ready">✔ ${sel.length} car${sel.length>1?'s':''} queued → <b>${esc(cx.name)}</b> · APT ${esc(cx.apt)}<br>

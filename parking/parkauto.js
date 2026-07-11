@@ -107,7 +107,18 @@ async function main() {
   // Manual run inside the app: manage the saved job
   if (config.runsInApp) {
     const clip = parseClipboard();
-    if (clip) {
+    if (clip && clip.days === -1) {
+      // Marked "off — just today" in PARK_OS: one-time run, never saved
+      const a = new Alert();
+      a.title = "ParkAuto — one-time run";
+      a.message = "Apt " + clip.apt + "\n" + jobSummary(clip) +
+        "\n\nThis selection is set to 'off — just today', so it won't be saved as a daily job." +
+        (job ? "\nYour existing daily job stays unchanged." : "");
+      a.addAction("Run once now");
+      a.addCancelAction("Cancel");
+      if (await a.present() === -1) return;
+      job = clip;
+    } else if (clip) {
       clip.endDate = endDateFor(clip.days);
       const a = new Alert();
       a.title = "ParkAuto — new selection on clipboard";
