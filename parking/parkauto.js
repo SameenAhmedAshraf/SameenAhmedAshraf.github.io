@@ -395,4 +395,18 @@ function masterScript(url, apt, cars) {
 })();`;
 }
 
-main();
+// Surface any unexpected error with full detail instead of a generic banner
+main().catch(async (e) => {
+  const msg = String(e && e.message ? e.message : e) +
+    (e && e.lineNumber ? "  (line " + e.lineNumber + ")" : "");
+  if (config.runsInApp) {
+    const a = new Alert();
+    a.title = "ParkAuto — error";
+    a.message = msg + "\n\nScreenshot this and send it to get it fixed.";
+    a.addAction("OK");
+    await a.present();
+  } else {
+    await notify("ParkAuto ✗ error", msg);
+  }
+  Script.complete();
+});
