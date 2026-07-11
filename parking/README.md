@@ -76,12 +76,17 @@ Per-car state machine (400 ms tick):
 ## Daily automation (ParkAuto)
 
 `parkauto.js` is a headless variant of ParkFill for unattended daily runs —
-no page is presented; the result arrives as an iOS notification.
+no page is presented; the result arrives as an iOS notification. It runs a
+**saved job** (complex + selected cars); each car's confirmation email goes
+to that car's saved driver email.
 
 1. Scriptable → **+** → rename exactly `ParkAuto` → paste `parkauto.js` → Done.
-2. Edit the `CONFIG` block at the top (complex URL, apt, cars).
-3. Run once by hand to grant notification permission and verify.
-4. Shortcuts app → **Automation** → **+** → *Time of Day* (e.g. 9:00 AM,
+2. **Select who gets registered daily:** in PARK_OS pick the complex, tap the
+   cars, tap RUN PARKFILL (copies the job) → run ParkAuto by hand → tap
+   **Save as daily job & run now**. Repeat these steps any time to change
+   the selection; run ParkAuto by hand with an empty/old clipboard to see
+   the current job.
+3. Shortcuts app → **Automation** → **+** → *Time of Day* (e.g. 9:00 AM,
    Daily) → **Run Immediately** (turn OFF *Ask Before Running*) → add the
    Scriptable **Run Script** action → pick `ParkAuto` → turn OFF *Run In App*
    and *Show When Run*.

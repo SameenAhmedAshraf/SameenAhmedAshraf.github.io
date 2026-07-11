@@ -1,36 +1,66 @@
 // ParkAuto — daily automatic parking registration (headless ParkFill)
 // ────────────────────────────────────────────────────────────────────
-// Runs WITHOUT opening a page on screen, so it can be triggered by a
-// Shortcuts time-of-day automation every morning. Sends an iOS
-// notification with the result.
+// Registers a SAVED job (complex + selected cars) every time it runs.
+// Each car's confirmation email goes to that car's saved driver email.
 //
-// Setup (one time):
-//   1. Scriptable → + → rename exactly: ParkAuto → paste this file → Done
-//   2. Edit CONFIG below with your complex + car(s)
-//   3. Run it once by hand to grant notification permission and verify
-//   4. Shortcuts app → Automation → + → Time of Day → e.g. 9:00 AM, Daily
-//      → Run Immediately (turn OFF "Ask Before Running")
-//      → Add action: "Run Script" (Scriptable) → ParkAuto
-//      → turn OFF "Run In App" and "Show When Run"
-// To stop: Shortcuts → Automation → toggle it off (or delete it).
+// Choosing WHO gets registered daily:
+//   1. In the PARK_OS app: pick the complex, tap the cars you want,
+//      tap RUN PARKFILL (this copies the job to the clipboard)
+//   2. Open Scriptable → run ParkAuto by hand
+//   3. It offers: "Save as daily job" — tap it. Done.
+//   Repeat the same steps any time to change the selection.
+//
+// One-time automation setup:
+//   Shortcuts app → Automation → + → Time of Day (e.g. 9:00 AM, Daily)
+//   → Run Immediately (turn OFF "Ask Before Running")
+//   → action: "Run Script" (Scriptable) → ParkAuto
+//   → turn OFF "Run In App" and "Show When Run"
+// To stop: toggle that automation off (or delete it).
 
-const CONFIG = {
-  url: "https://www.register2park.com/register?key=aav4mvkvs92",
-  apt: "728",
-  cars: [
-    {
-      label: "Sam",
-      make:  "Toyota",
-      model: "Highlander",
-      plate: "XLZ3992",
-      email: "sameen.ahmed.ashraf98@gmail.com",
-    },
-    // Add more cars here to register several every day:
-    // { label: "Mom", make: "Honda", model: "Civic", plate: "ABC1234", email: "mom@example.com" },
-  ],
-};
+const JOB_FILE = "parkauto-job.json";
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function fm() {
+  try { const f = FileManager.iCloud(); f.documentsDirectory(); return f; }
+  catch (e) { return FileManager.local(); }
+}
+
+async function loadJob() {
+  try {
+    const f = fm();
+    const p = f.joinPath(f.documentsDirectory(), JOB_FILE);
+    if (!f.fileExists(p)) return null;
+    try { await f.downloadFileFromiCloud(p); } catch (e) {}
+    return JSON.parse(f.readString(p));
+  } catch (e) { return null; }
+}
+
+function saveJob(job) {
+  const f = fm();
+  const p = f.joinPath(f.documentsDirectory(), JOB_FILE);
+  f.writeString(p, JSON.stringify(job));
+}
+
+function parseClipboard() {
+  try {
+    const d = JSON.parse(Pasteboard.paste());
+    if (!d.url || !Array.isArray(d.cars) || !d.cars.length) return null;
+    d.cars = d.cars.map(c => {
+      const o = {};
+      for (const k in c) o[k] = typeof c[k] === "string" ? c[k].trim() : c[k];
+      return o;
+    });
+    d.apt = String(d.apt || "").trim();
+    return { url: d.url, apt: d.apt, cars: d.cars };
+  } catch (e) { return null; }
+}
+
+function jobSummary(job) {
+  return job.cars.map(c =>
+    "• " + (c.label || c.plate) + (c.email ? " → " + c.email : " (no email)")
+  ).join("\n");
+}
 
 async function notify(title, body) {
   try {
@@ -42,15 +72,51 @@ async function notify(title, body) {
 }
 
 async function main() {
-  const cars = CONFIG.cars.map(c => {
-    const o = {};
-    for (const k in c) o[k] = typeof c[k] === "string" ? c[k].trim() : c[k];
-    return o;
-  });
+  let job = await loadJob();
+
+  // Manual run inside the app: manage the saved job
+  if (config.runsInApp) {
+    const clip = parseClipboard();
+    if (clip) {
+      const a = new Alert();
+      a.title = "ParkAuto — new selection on clipboard";
+      a.message = "Apt " + clip.apt + "\n" + jobSummary(clip) +
+        "\n\nSave this as the daily job?";
+      a.addAction("Save as daily job & run now");
+      a.addAction("Run once (don't save)");
+      a.addCancelAction("Cancel");
+      const c = await a.present();
+      if (c === -1) return;
+      if (c === 0) { saveJob(clip); job = clip; }
+      else job = clip;
+    } else if (job) {
+      const a = new Alert();
+      a.title = "ParkAuto — current daily job";
+      a.message = "Apt " + job.apt + "\n" + jobSummary(job) +
+        "\n\nTo change who's registered: select cars in PARK_OS, tap RUN PARKFILL, then run ParkAuto again.";
+      a.addAction("Run now");
+      a.addCancelAction("Close");
+      if (await a.present() === -1) return;
+    } else {
+      const a = new Alert();
+      a.title = "ParkAuto — no daily job yet";
+      a.message = "In PARK_OS: pick your complex, tap the cars to register daily, tap RUN PARKFILL — then run ParkAuto again to save it.";
+      a.addAction("OK");
+      await a.present();
+      return;
+    }
+  }
+
+  // Background (automation) run: need a saved job
+  if (!job) {
+    await notify("ParkAuto ⚠ no daily job", "Open PARK_OS, select cars, RUN PARKFILL, then run ParkAuto once to save the job.");
+    Script.complete();
+    return;
+  }
 
   const wv = new WebView();
   try {
-    await wv.loadURL(CONFIG.url);
+    await wv.loadURL(job.url);
   } catch (e) {
     await notify("ParkAuto ✗", "Could not load register2park: " + e);
     Script.complete();
@@ -60,7 +126,7 @@ async function main() {
   let result;
   try {
     result = await Promise.race([
-      wv.evaluateJavaScript(masterScript(CONFIG.url, String(CONFIG.apt).trim(), cars), true),
+      wv.evaluateJavaScript(masterScript(job.url, job.apt, job.cars), true),
       sleep(115000).then(() => null),
     ]);
   } catch (e) {
@@ -72,10 +138,9 @@ async function main() {
   else if (typeof result === "string") lines = [result];
   else lines = result;
 
-  const ok = lines.every(l => /registered/.test(l)) && lines.length === cars.length;
+  const ok = lines.every(l => /registered/.test(l)) && lines.length === job.cars.length;
   await notify(ok ? "ParkAuto ✓ registered" : "ParkAuto ⚠ check needed", lines.join("\n"));
 
-  // When run by hand inside the Scriptable app, show the final page too
   if (config.runsInApp) await wv.present(false);
   Script.complete();
 }
@@ -211,8 +276,6 @@ function masterScript(url, apt, cars) {
         fill("vehicleModel",               car.model);
         fill("vehicleLicensePlate",        car.plate);
         fill("vehicleLicensePlateConfirm", car.plate);
-        // Generous first delay: give the site's scripts (recaptcha etc.)
-        // time to finish setting up before the headless submit.
         submitAt = Date.now() + (i === 0 ? 8000 : 3000);
         st = "submit"; tk = 0;
       } else if (tk > 37) failCar("vehicle form never appeared");
