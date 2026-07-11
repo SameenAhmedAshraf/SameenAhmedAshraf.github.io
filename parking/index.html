@@ -72,6 +72,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opac
 .cx .ap.warn{color:var(--pink)}
 .cx.on{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(34,211,238,.25)}
 .cx.on .ap{color:var(--cyan)}
+.cx.dur{min-width:0;padding:10px 14px}
+.cx.dur .nm{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap}
+.durhint{font-family:var(--mono);font-size:10.5px;color:var(--faint);padding:8px 20px 0;line-height:1.5}
 
 /* ── THE LOT (parking grid) ── */
 .lot{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px}
@@ -201,6 +204,17 @@ let complexes=load('complexes2')||[
 let cars=load('cars')||[];
 
 const CAR_EMOJI=['🚗','🚙','🏎️','🚘','🛻','🚕'];
+const DURATIONS=[
+  {d:0, lbl:'until stopped'},
+  {d:1, lbl:'1 day'},
+  {d:3, lbl:'3 days'},
+  {d:7, lbl:'1 week'},
+  {d:14,lbl:'2 weeks'},
+  {d:30,lbl:'30 days'},
+];
+S.autoDays=load('autodays')??0;
+function durLabel(d){const o=DURATIONS.find(x=>x.d===d);return o?('auto: '+o.lbl):'auto: until stopped'}
+function setDays(d){S.autoDays=d;ls('autodays',d);render()}
 
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function saveAll(){ls('complexes2',complexes);ls('cars',cars)}
@@ -218,6 +232,7 @@ function buildClipboardData(cx, list){
   return JSON.stringify({
     url: cx.url||'https://www.register2park.com/',
     apt: cx.apt||'', code: cx.code||'',
+    days: S.autoDays||0,
     cars: list.map(c=>({label:c.label||'',make:c.make||'',model:c.model||'',plate:c.plate||'',email:c.email||''})),
     make:first.make||'',model:first.model||'',plate:first.plate||'',email:first.email||'',label:first.label||'',
   });
@@ -292,8 +307,18 @@ function viewReg(){
     </div>`}
   </div>
 
+  <div class="sec"><div class="sec-hdr">03 · auto-run length</div>
+    <div class="cxrow">
+      ${DURATIONS.map(o=>`
+      <button class="cx dur ${S.autoDays===o.d?'on':''}" onclick="setDays(${o.d})">
+        <div class="nm">${o.lbl}</div>
+      </button>`).join('')}
+    </div>
+    <div class="durhint">Used when you save this as ParkAuto's daily job — it stops itself after this long.</div>
+  </div>
+
   ${canGo?`<div class="ready">✔ ${sel.length} car${sel.length>1?'s':''} queued → <b>${esc(cx.name)}</b> · APT ${esc(cx.apt)}<br>
-    <span class="dim">${sel.map(c=>esc(c.label||c.plate)).join(' · ')}</span></div>`:''}
+    <span class="dim">${sel.map(c=>esc(c.label||c.plate)).join(' · ')} · ${esc(durLabel(S.autoDays))}</span></div>`:''}
 
   <div class="runwrap">
     <button class="run ${canGo?'armed':''}" ${canGo?'':'disabled'} onclick="doRegister()">

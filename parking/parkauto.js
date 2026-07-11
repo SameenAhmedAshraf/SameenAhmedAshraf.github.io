@@ -42,6 +42,14 @@ function saveJob(job) {
   f.writeString(p, JSON.stringify(job));
 }
 
+function deleteJob() {
+  try {
+    const f = fm();
+    const p = f.joinPath(f.documentsDirectory(), JOB_FILE);
+    if (f.fileExists(p)) f.remove(p);
+  } catch (e) {}
+}
+
 function parseClipboard() {
   try {
     const d = JSON.parse(Pasteboard.paste());
@@ -52,8 +60,30 @@ function parseClipboard() {
       return o;
     });
     d.apt = String(d.apt || "").trim();
-    return { url: d.url, apt: d.apt, cars: d.cars };
+    return { url: d.url, apt: d.apt, cars: d.cars, days: Number(d.days) || 0 };
   } catch (e) { return null; }
+}
+
+// Local calendar date as "YYYY-MM-DD" (no UTC shift surprises)
+function isoDay(date) {
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+}
+function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
+
+// endDate = last day the job runs (inclusive); null = run until stopped
+function endDateFor(days) { return days > 0 ? isoDay(addDays(new Date(), days - 1)) : null; }
+function daysLeft(job) {
+  if (!job.endDate) return null;
+  const end = new Date(job.endDate + "T23:59:59");
+  return Math.max(0, Math.floor((end - new Date()) / 86400000) + 1);
+}
+function durationLine(job) {
+  if (!job.endDate) return "Runs daily until you stop it.";
+  const left = daysLeft(job);
+  if (left === 0) return "Run window ended " + job.endDate + ".";
+  if (left === 1) return "Last day today (ends " + job.endDate + ").";
+  return "Runs daily through " + job.endDate + " (" + left + " days left).";
 }
 
 function jobSummary(job) {
@@ -78,10 +108,11 @@ async function main() {
   if (config.runsInApp) {
     const clip = parseClipboard();
     if (clip) {
+      clip.endDate = endDateFor(clip.days);
       const a = new Alert();
       a.title = "ParkAuto — new selection on clipboard";
       a.message = "Apt " + clip.apt + "\n" + jobSummary(clip) +
-        "\n\nSave this as the daily job?";
+        "\n\n" + durationLine(clip) + "\n\nSave this as the daily job?";
       a.addAction("Save as daily job & run now");
       a.addAction("Run once (don't save)");
       a.addCancelAction("Cancel");
@@ -93,10 +124,22 @@ async function main() {
       const a = new Alert();
       a.title = "ParkAuto — current daily job";
       a.message = "Apt " + job.apt + "\n" + jobSummary(job) +
-        "\n\nTo change who's registered: select cars in PARK_OS, tap RUN PARKFILL, then run ParkAuto again.";
+        "\n\n" + durationLine(job) +
+        "\n\nTo change people or length: select in PARK_OS, tap RUN PARKFILL, then run ParkAuto again.";
       a.addAction("Run now");
+      a.addAction("Delete daily job");
       a.addCancelAction("Close");
-      if (await a.present() === -1) return;
+      const c = await a.present();
+      if (c === -1) return;
+      if (c === 1) {
+        deleteJob();
+        const d = new Alert();
+        d.title = "ParkAuto";
+        d.message = "Daily job deleted. Remember to toggle off the Shortcuts automation too.";
+        d.addAction("OK");
+        await d.present();
+        return;
+      }
     } else {
       const a = new Alert();
       a.title = "ParkAuto — no daily job yet";
@@ -110,6 +153,19 @@ async function main() {
   // Background (automation) run: need a saved job
   if (!job) {
     await notify("ParkAuto ⚠ no daily job", "Open PARK_OS, select cars, RUN PARKFILL, then run ParkAuto once to save the job.");
+    Script.complete();
+    return;
+  }
+
+  // Run window over? Stop by itself (one final notification, then silence).
+  if (job.endDate && isoDay(new Date()) > job.endDate) {
+    if (!job.doneNotified) {
+      job.doneNotified = true;
+      saveJob(job);
+      await notify("ParkAuto ✅ finished",
+        "The run window ended " + job.endDate + " — nothing was registered today. " +
+        "Toggle off the Shortcuts automation, or save a new job from PARK_OS.");
+    }
     Script.complete();
     return;
   }
@@ -139,7 +195,8 @@ async function main() {
   else lines = result;
 
   const ok = lines.every(l => /registered/.test(l)) && lines.length === job.cars.length;
-  await notify(ok ? "ParkAuto ✓ registered" : "ParkAuto ⚠ check needed", lines.join("\n"));
+  const tail = job.endDate ? "\n" + durationLine(job) : "";
+  await notify(ok ? "ParkAuto ✓ registered" : "ParkAuto ⚠ check needed", lines.join("\n") + tail);
 
   if (config.runsInApp) await wv.present(false);
   Script.complete();

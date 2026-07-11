@@ -81,11 +81,13 @@ no page is presented; the result arrives as an iOS notification. It runs a
 to that car's saved driver email.
 
 1. Scriptable → **+** → rename exactly `ParkAuto` → paste `parkauto.js` → Done.
-2. **Select who gets registered daily:** in PARK_OS pick the complex, tap the
-   cars, tap RUN PARKFILL (copies the job) → run ParkAuto by hand → tap
-   **Save as daily job & run now**. Repeat these steps any time to change
-   the selection; run ParkAuto by hand with an empty/old clipboard to see
-   the current job.
+2. **Select who gets registered daily and for how long:** in PARK_OS pick
+   the complex, tap the cars, pick an **auto-run length** (1 day … 30 days,
+   or *until stopped*), tap RUN PARKFILL (copies the job) → run ParkAuto by
+   hand → tap **Save as daily job & run now**. The job stops itself when the
+   window ends (one final "finished" notification, then silence). Repeat
+   these steps any time to change people or length; run ParkAuto by hand
+   with an empty/old clipboard to view or delete the current job.
 3. Shortcuts app → **Automation** → **+** → *Time of Day* (e.g. 9:00 AM,
    Daily) → **Run Immediately** (turn OFF *Ask Before Running*) → add the
    Scriptable **Run Script** action → pick `ParkAuto` → turn OFF *Run In App*
