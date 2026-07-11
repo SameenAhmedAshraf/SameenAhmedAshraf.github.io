@@ -73,6 +73,23 @@ Hard-won constraints that shaped the design — change with care:
 Per-car state machine (400 ms tick):
 `ifload → form → submit → registering → email → emailmodal → next car`.
 
+## Daily automation (ParkAuto)
+
+`parkauto.js` is a headless variant of ParkFill for unattended daily runs —
+no page is presented; the result arrives as an iOS notification.
+
+1. Scriptable → **+** → rename exactly `ParkAuto` → paste `parkauto.js` → Done.
+2. Edit the `CONFIG` block at the top (complex URL, apt, cars).
+3. Run once by hand to grant notification permission and verify.
+4. Shortcuts app → **Automation** → **+** → *Time of Day* (e.g. 9:00 AM,
+   Daily) → **Run Immediately** (turn OFF *Ask Before Running*) → add the
+   Scriptable **Run Script** action → pick `ParkAuto` → turn OFF *Run In App*
+   and *Show When Run*.
+
+To pause/stop: toggle the automation off in Shortcuts. The phone must be on
+and online at the scheduled time; if a run fails you get a ⚠ notification
+and can run ParkFill manually that day.
+
 ## Caching / updates
 
 - `sw.js` caches `/parking/` + `index.html` + `manifest.json` cache-first.
