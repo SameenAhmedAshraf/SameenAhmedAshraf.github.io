@@ -36,7 +36,8 @@ async function main() {
 
   let r = "no result";
   try {
-    r = await wv.evaluateJavaScript(masterScript(d.url, String(d.apt || "").trim(), cars), true);
+    r = await wv.evaluateJavaScript(
+      masterScript(d.url, String(d.apt || "").trim(), String(d.code || "").trim(), cars), true);
   } catch (e) {
     r = "FAIL: " + e;
   }
@@ -75,8 +76,8 @@ async function main() {
   }
 }
 
-function masterScript(url, apt, cars) {
-  const D = JSON.stringify({ url: url, apt: apt, cars: cars })
+function masterScript(url, apt, code, cars) {
+  const D = JSON.stringify({ url: url, apt: apt, code: code, cars: cars })
     .replace(/</g, "\\u003C").replace(/>/g, "\\u003E");
 
   return `(function () {
@@ -173,8 +174,8 @@ function masterScript(url, apt, cars) {
   // ── State machine (runs in the parent; acts on the iframe) ────────────────
   var i = 0, st = "ifload", tk = 0;
   var attempts = 0, submitAt = 0, deadline = 0;
-  var emailClicked, emailFilled, emailSent, sendAt, doneAt;
-  function resetCar() { attempts = 0; emailClicked = emailFilled = emailSent = false; errFlag = false; }
+  var emailClicked, emailFilled, emailSent, sendAt, doneAt, codeTried;
+  function resetCar() { attempts = 0; emailClicked = emailFilled = emailSent = false; errFlag = false; codeTried = false; }
   resetCar();
 
   function label() { var c = CARS[i]; return c.label || c.plate || ("car " + (i + 1)); }
@@ -234,7 +235,18 @@ function masterScript(url, apt, cars) {
         st = "submit"; tk = 0;
         ready("ready");   // first fill: let Scriptable present the webview
         setHud(who() + " · filled, submitting…");
-      } else if (tk > 37) failCar("vehicle form never appeared");
+      } else if (!codeTried && vis(el("accessCode"))) {
+        // Property access-code gate before the vehicle form
+        if (!D.code) { failCar("this property needs an access code — save the PIN on this base in PARK_OS"); return; }
+        fill("accessCode", D.code);
+        codeTried = true; tk = 0;
+        setHud(who() + " · entering access code…");
+        click("propertyPassword");
+        ready("ready");   // show the webview while the code step runs
+      } else if (codeTried && vis(el("error-modal"))) {
+        dismissErrorModal();
+        failCar("access code was rejected — double-check the PIN saved on this base");
+      } else if (tk > 50) failCar("vehicle form never appeared");
     }
 
     else if (st === "submit") {

@@ -60,7 +60,8 @@ function parseClipboard() {
       return o;
     });
     d.apt = String(d.apt || "").trim();
-    return { url: d.url, apt: d.apt, cars: d.cars, days: Number(d.days) || 0 };
+    return { url: d.url, apt: d.apt, code: String(d.code || "").trim(),
+             cars: d.cars, days: Number(d.days) || 0 };
   } catch (e) { return null; }
 }
 
@@ -193,7 +194,7 @@ async function main() {
   let result;
   try {
     result = await Promise.race([
-      wv.evaluateJavaScript(masterScript(job.url, job.apt, job.cars), true),
+      wv.evaluateJavaScript(masterScript(job.url, job.apt, String(job.code || ""), job.cars), true),
       sleep(115000).then(() => null),
     ]);
   } catch (e) {
@@ -213,8 +214,8 @@ async function main() {
   Script.complete();
 }
 
-function masterScript(url, apt, cars) {
-  const D = JSON.stringify({ url: url, apt: apt, cars: cars })
+function masterScript(url, apt, code, cars) {
+  const D = JSON.stringify({ url: url, apt: apt, code: code, cars: cars })
     .replace(/</g, "\\u003C").replace(/>/g, "\\u003E");
 
   return `(function () {
@@ -294,8 +295,8 @@ function masterScript(url, apt, cars) {
 
   var i = 0, st = "ifload", tk = 0;
   var attempts = 0, submitAt = 0, deadline = 0;
-  var emailClicked, emailFilled, emailSent, sendAt, doneAt;
-  function resetCar() { attempts = 0; emailClicked = emailFilled = emailSent = false; errFlag = false; }
+  var emailClicked, emailFilled, emailSent, sendAt, doneAt, codeTried;
+  function resetCar() { attempts = 0; emailClicked = emailFilled = emailSent = false; errFlag = false; codeTried = false; }
   resetCar();
 
   function label() { var c = CARS[i]; return c.label || c.plate || ("car " + (i + 1)); }
@@ -346,7 +347,15 @@ function masterScript(url, apt, cars) {
         fill("vehicleLicensePlateConfirm", car.plate);
         submitAt = Date.now() + (i === 0 ? 8000 : 3000);
         st = "submit"; tk = 0;
-      } else if (tk > 37) failCar("vehicle form never appeared");
+      } else if (!codeTried && vis(el("accessCode"))) {
+        if (!D.code) { failCar("property needs an access code — save the PIN on this base in PARK_OS, then re-save the daily job"); return; }
+        fill("accessCode", D.code);
+        codeTried = true; tk = 0;
+        click("propertyPassword");
+      } else if (codeTried && vis(el("error-modal"))) {
+        dismissErrorModal();
+        failCar("access code was rejected — check the PIN saved on this base");
+      } else if (tk > 50) failCar("vehicle form never appeared");
     }
 
     else if (st === "submit") {

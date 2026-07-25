@@ -371,7 +371,8 @@ function viewComplexes(){
       <span class="chev">&gt;</span>
     </button>`).join('')}
   </div>
-  <div class="mhint">To grab the link: open <b>register2park.com</b> in Safari, find your complex, copy the page URL (it looks like …/register?key=xxxx) and paste it in the complex settings.</div>
+  <button class="btn grad" onclick="addComplex()">+ ADD BASE</button>
+  <div class="mhint">To grab the link: open <b>register2park.com</b> in Safari, find your complex, copy the page URL (it looks like …/register?key=xxxx) and paste it in the complex settings. If the property asks for an <b>access code</b> (a PIN), save it there too.</div>
   </div>`;
 }
 
@@ -452,7 +453,7 @@ function modalComplex(){
       <div class="handle"></div>
       <div class="mnav">
         <button class="mbtn" onclick="closeModal()">Cancel</button>
-        <span class="ttl">EDIT BASE</span>
+        <span class="ttl">${S.draft.id?'EDIT BASE':'NEW BASE'}</span>
         <button class="mbtn" style="font-weight:800" onclick="saveComplex()">Save</button>
       </div>
       <div class="sec-hdr" style="padding-top:4px">info</div>
@@ -468,9 +469,10 @@ function modalComplex(){
             placeholder="https://www.register2park.com/register?key=…"
             value="${esc(d.url||'')}" oninput="S.draft.url=this.value">
         </div>
-        <div class="ff"><label>code</label><input placeholder="optional guest code" autocapitalize="none" value="${esc(d.code||'')}" oninput="S.draft.code=this.value"></div>
+        <div class="ff"><label>access code</label><input placeholder="PIN, if the property asks for one" autocapitalize="none" value="${esc(d.code||'')}" oninput="S.draft.code=this.value"></div>
       </div>
-      <div class="mhint">Open register2park.com in Safari → select your complex → copy the address-bar URL → paste above.</div>
+      <div class="mhint">Open register2park.com in Safari → select your complex → copy the address-bar URL → paste above. If the property shows an <b>Access Code</b> screen, save that PIN here — ParkFill enters it automatically.</div>
+      ${d.id?`<button class="btn danger" onclick="deleteComplex('${d.id}')">DELETE BASE</button>`:''}
       <div style="height:22px"></div>
     </div>
   </div>`;
@@ -536,11 +538,20 @@ function deleteCar(id){
   saveAll();S.modal=null;render();
 }
 
+function addComplex(){S.draft={url:'https://www.register2park.com/'};S.modal='complex';render()}
 function editComplex(id){const c=complexes.find(x=>x.id===id);S.draft={...c};S.modal='complex';render()}
 function saveComplex(){
-  const d=S.draft;if(!d.name)return;
+  const d=S.draft;
+  if(!d.name){alert('Give the base a name.');return}
+  d.id=d.id||uid();
   const idx=complexes.findIndex(c=>c.id===d.id);
-  if(idx>=0)complexes[idx]={...d};
+  if(idx>=0)complexes[idx]={...d};else complexes.push({...d});
+  saveAll();S.modal=null;render();
+}
+function deleteComplex(id){
+  if(!confirm('Delete this base?'))return;
+  complexes=complexes.filter(c=>c.id!==id);
+  if(S.sel.cid===id)S.sel.cid=null;
   saveAll();S.modal=null;render();
 }
 
