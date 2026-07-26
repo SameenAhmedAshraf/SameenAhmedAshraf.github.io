@@ -6,7 +6,14 @@
 // top page alive and runs EVERY car inside a full-screen same-origin
 // iframe, reloading the iframe between cars. Parent timers/HUD survive.
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// Timer.schedule works in every Scriptable context, including headless
+// Shortcuts automation runs where global setTimeout is not defined.
+function sleep(ms) {
+  return new Promise((resolve) => {
+    if (typeof Timer !== "undefined" && Timer.schedule) Timer.schedule(ms, false, resolve);
+    else setTimeout(resolve, ms);
+  });
+}
 
 async function main() {
   const raw = Pasteboard.paste();

@@ -19,7 +19,14 @@
 
 const JOB_FILE = "parkauto-job.json";
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// Timer.schedule works in every Scriptable context, including headless
+// Shortcuts automation runs where global setTimeout is not defined.
+function sleep(ms) {
+  return new Promise((resolve) => {
+    if (typeof Timer !== "undefined" && Timer.schedule) Timer.schedule(ms, false, resolve);
+    else setTimeout(resolve, ms);
+  });
+}
 
 function fm() {
   try { const f = FileManager.iCloud(); f.documentsDirectory(); return f; }
